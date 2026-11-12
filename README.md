@@ -34,7 +34,7 @@ Antes de iniciar, certifique-se de ter instalado em seu computador:
 1. Clone o repositório:
 
    ```bash
-   git clone https://github.com/viniciusmsimoes/freela.git
+   git clone https://github.com/ViniMSimoes/freela.git
    cd freela
    ```
 
@@ -188,7 +188,7 @@ freela/
 
 | Integrante | Papel no projeto | GitHub |
 |---|---|---|
-| Vinicius Marcello Simoes | Engenharia de Software / Arquitetura & Backend | [@viniciusmsimoes](https://github.com/viniciusmsimoes) |
+| Vinicius Marcello Simoes | Engenharia de Software / Arquitetura & Backend | [@ViniMSimoes](https://github.com/ViniMSimoes) |
 | Kaique | Modelagem de Processos & Regras de Negócio (BPMN) | [@kaique](https://github.com) |
 | Caio | Engenharia de Requisitos & Casos de Uso | [@caio](https://github.com) |
 | Yago | Modelagem Relacional & Banco de Dados | [@yago](https://github.com) |

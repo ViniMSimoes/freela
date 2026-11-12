@@ -1,6 +1,6 @@
 # Manual Técnico Parcial — FreeLA
 
-Versão: 1.0 · Data: 12/11/2026 · Repositório: https://github.com/viniciusmsimoes/freela
+Versão: 1.0 · Data: 12/11/2026 · Repositório: https://github.com/ViniMSimoes/freela
 
 ## 1. Público-alvo e tarefas
 
