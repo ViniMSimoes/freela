@@ -2,6 +2,15 @@
 
 Plataforma SaaS de intermediação de serviços manuais e reparos residenciais com pagamento protegido em custódia (Escrow) até a vistoria e aprovação final do cliente.
 
+## Documentação da Entrega — Critérios de Avaliação (13/11)
+
+| Critério | O que foi entregue | Onde encontrar no repositório | Avaliação Alvo |
+|---|---|---|:---:|
+| **C1. Repositório no GitHub** | Repositório público ativo, commits regulares distribuídos entre os integrantes da equipe com mensagens semânticas | [Histórico de Commits](https://github.com/ViniMSimoes/freela/commits/main) | **Completo (1,5 pts)** |
+| **C2. README e Manual Técnico Parcial** | README completo com passos de execução testados do zero e manual técnico aprofundado com Arquitetura (Opção C) e API (Opção B1) | [README.md](README.md) e [Manual Técnico Parcial](docs/manual-tecnico-parcial.md) | **Completo (1,5 pts)** |
+| **C3. Product Backlog Atualizado** | Backlog versão 2.0 priorizado, detalhando o que mudou desde 16/10, itens entregues no MVP e rastreabilidade com testes | [Backlog Atualizado](docs/backlog-atualizado.md) | **Completo (1,0 pt)** |
+| **C4. Estrutura do Banco de Dados** | Modelagem relacional SQLite com DER/MER, integridade referencial, dicionário de tabelas e coerência com diagramas | [Estrutura do Banco de Dados](docs/estrutura-banco-de-dados.md) e [schema.sql](src/database/schema.sql) | **Completo (1,0 pt)** |
+
 ## Sobre o projeto
 
 A contratação informal de serviços manuais residenciais (como eletricistas, encanadores, pintores e pedreiros) gera constante insegurança financeira para ambas as partes: clientes temem pagar adiantado e receber um serviço mal executado ou abandonado, enquanto prestadores autônomos sofrem com calotes e atrasos após realizarem a mão de obra.
@@ -179,7 +188,11 @@ freela/
 
 ## Documentação complementar
 
-- [Manual Técnico Parcial](docs/manual-tecnico-parcial.md)
+- [Manual Técnico Parcial (Arquitetura & API)](docs/manual-tecnico-parcial.md)
+- [Estrutura do Banco de Dados & DER (Critério C4)](docs/estrutura-banco-de-dados.md)
+- [Product Backlog Atualizado Versão 2.0 (Critério C3)](docs/backlog-atualizado.md)
+- [Relatório de Auditoria de Segurança & Hardening](docs/relatorio-auditoria-seguranca.md)
+- [Diagrama Entidade-Relacionamento (DER)](docs/img/diagrama_der.png)
 - [Diagrama de Componentes](docs/img/diagrama_componentes.png)
 - [Diagrama de Classes de Domínio](docs/img/diagrama_classes.png)
 - [Diagrama BPMN 2.0 do Processo de Negócio](docs/img/diagrama_bpmn.png)
