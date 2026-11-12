@@ -25,7 +25,7 @@ O sistema FreeLA foi projetado seguindo uma arquitetura em três camadas desacop
 | API Gateway & Roteador | Centralizar o roteamento das requisições HTTP, validação de cabeçalhos CORS e formato JSON | Node.js 24.18.0 / Express 4.21.2 | `src/routes/api.js` |
 | Controlador de Ordens e Negócio | Orquestrar o ciclo de vida das ordens de serviço, gerenciar propostas e disparar eventos da máquina de estados | JavaScript ES6+ | `src/controllers/ordensController.js` |
 | Motor de Custódia (Escrow Engine) | Executar o bloqueio financeiro no checkout e a liquidação ou estorno dos valores apenas após validação de vistoria | Lógica Transacional Integrada | `src/controllers/ordensController.js` |
-| Camada de Persistência (Database) | Conexão, execução de schema e migrações/seed com garantia ACID | SQLite 3 (`node:sqlite` nativo) | `src/database/` |
+| Camada de Persistência (Database) | Conexão, execução de schema e migrações/seed com garantia ACID (detalhado em [docs/estrutura-banco-de-dados.md](estrutura-banco-de-dados.md)) | SQLite 3 (`node:sqlite` nativo) | `src/database/` |
 | Suíte de Testes Automatizados | Validar os fluxos ponta a ponta da API REST de ponta a ponta sem dependências externas | Script de Teste / Node.js Assert | `tests/api.test.js` |
 
 ### Diagrama
