@@ -1,0 +1,25 @@
+{
+  "name": "freela",
+  "version": "1.0.0",
+  "description": "SaaS de intermediação de serviços manuais e reformas residenciais com custódia financeira protegida (Escrow).",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "test": "node tests/api.test.js"
+  },
+  "keywords": [
+    "saas",
+    "servicos-residenciais",
+    "escrow",
+    "custodia-financeira",
+    "express",
+    "sqlite"
+  ],
+  "author": "Vinicius Marcello Simoes, Kaique, Caio, Yago, Lucas Augusto, Lucas Gabriel",
+  "license": "MIT",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.21.2"
+  }
+}
