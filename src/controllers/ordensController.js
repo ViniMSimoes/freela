@@ -1,6 +1,20 @@
 const db = require('../database/connection');
 
-// Listar ordens com filtros
+// Whitelists para validação estrita (OWASP Input Validation)
+const CATEGORIAS_VALIDAS = ['Elétrica', 'Hidráulica', 'Pintura', 'Alvenaria', 'Climatização'];
+const URGENCIAS_VALIDAS = ['BAIXA', 'MEDIA', 'ALTA', 'EMERGENCIAL'];
+const STATUS_VALIDOS = [
+  'PENDENTE', 'PROPOSTA_RECEBIDA', 'EM_CUSTODIA', 'A_CAMINHO',
+  'EM_EXECUCAO', 'AGUARDANDO_VISTORIA', 'CONCLUIDO', 'EM_DISPUTA', 'CANCELADO'
+];
+
+// Função utilitária de sanitização de texto para defesa em profundidade
+function sanitizarTexto(str, maxLen = 255) {
+  if (typeof str !== 'string') return '';
+  return str.replace(/<[^>]*>?/gm, '').trim().substring(0, maxLen);
+}
+
+// 1. Listar ordens com filtros validados
 exports.listarOrdens = (req, res) => {
   try {
     const { status, categoria, cliente_id, prestador_id } = req.query;
@@ -19,20 +33,37 @@ exports.listarOrdens = (req, res) => {
     const params = [];
 
     if (status) {
+      if (!STATUS_VALIDOS.includes(status)) {
+        return res.status(400).json({ sucesso: false, mensagem: 'Status de filtro inválido.' });
+      }
       sql += ` AND o.status = ?`;
       params.push(status);
     }
+
     if (categoria) {
+      if (!CATEGORIAS_VALIDAS.includes(categoria)) {
+        return res.status(400).json({ sucesso: false, mensagem: 'Categoria de filtro inválida.' });
+      }
       sql += ` AND o.categoria = ?`;
       params.push(categoria);
     }
+
     if (cliente_id) {
+      const cId = parseInt(cliente_id, 10);
+      if (isNaN(cId) || cId <= 0) {
+        return res.status(400).json({ sucesso: false, mensagem: 'ID de cliente inválido.' });
+      }
       sql += ` AND o.cliente_id = ?`;
-      params.push(cliente_id);
+      params.push(cId);
     }
+
     if (prestador_id) {
+      const pId = parseInt(prestador_id, 10);
+      if (isNaN(pId) || pId <= 0) {
+        return res.status(400).json({ sucesso: false, mensagem: 'ID de prestador inválido.' });
+      }
       sql += ` AND (o.prestador_id = ? OR (o.status IN ('PENDENTE', 'PROPOSTA_RECEBIDA') AND o.prestador_id IS NULL))`;
-      params.push(prestador_id);
+      params.push(pId);
     }
 
     sql += ` ORDER BY o.id DESC`;
@@ -41,14 +72,19 @@ exports.listarOrdens = (req, res) => {
     const ordens = stmt.all(...params);
     res.json({ sucesso: true, total: ordens.length, dados: ordens });
   } catch (error) {
-    res.status(500).json({ sucesso: false, mensagem: error.message });
+    console.error('[ERRO listarOrdens]:', error);
+    res.status(500).json({ sucesso: false, mensagem: 'Falha ao consultar ordens de serviço.' });
   }
 };
 
-// Obter detalhes de uma ordem específica
+// 2. Obter detalhes de uma ordem específica
 exports.obterOrdem = (req, res) => {
   try {
-    const { id } = req.params;
+    const id = parseInt(req.params.id, 10);
+    if (isNaN(id) || id <= 0) {
+      return res.status(400).json({ sucesso: false, mensagem: 'Identificador de ordem inválido.' });
+    }
+
     const ordem = db.prepare(`
       SELECT 
         o.*,
@@ -94,20 +130,50 @@ exports.obterOrdem = (req, res) => {
       }
     });
   } catch (error) {
-    res.status(500).json({ sucesso: false, mensagem: error.message });
+    console.error('[ERRO obterOrdem]:', error);
+    res.status(500).json({ sucesso: false, mensagem: 'Erro interno ao recuperar ordem.' });
   }
 };
 
-// Criar nova ordem de serviço (Solicitação do Cliente)
+// 3. Criar nova ordem de serviço (Solicitação do Cliente) com validação rígida
 exports.criarOrdem = (req, res) => {
   try {
     const { cliente_id, categoria, titulo, descricao, cep, endereco, urgencia } = req.body;
 
-    if (!cliente_id || !categoria || !titulo || !descricao || !cep || !endereco) {
+    const cId = parseInt(cliente_id, 10);
+    if (isNaN(cId) || cId <= 0) {
+      return res.status(400).json({ sucesso: false, mensagem: 'cliente_id inválido.' });
+    }
+
+    if (!CATEGORIAS_VALIDAS.includes(categoria)) {
       return res.status(400).json({
         sucesso: false,
-        mensagem: 'Campos obrigatórios ausentes: cliente_id, categoria, titulo, descricao, cep e endereco.'
+        mensagem: `Categoria inválida. Categorias aceitas: ${CATEGORIAS_VALIDAS.join(', ')}`
       });
+    }
+
+    const tituloSan = sanitizarTexto(titulo, 120);
+    const descricaoSan = sanitizarTexto(descricao, 2000);
+    const cepSan = sanitizarTexto(cep, 15);
+    const enderecoSan = sanitizarTexto(endereco, 200);
+    const urgenciaVal = URGENCIAS_VALIDAS.includes(urgencia) ? urgencia : 'MEDIA';
+
+    if (!tituloSan || tituloSan.length < 5) {
+      return res.status(400).json({ sucesso: false, mensagem: 'O título deve possuir pelo menos 5 caracteres.' });
+    }
+
+    if (!descricaoSan || descricaoSan.length < 10) {
+      return res.status(400).json({ sucesso: false, mensagem: 'A descrição deve detalhar o defeito com no mínimo 10 caracteres.' });
+    }
+
+    if (!cepSan || !enderecoSan) {
+      return res.status(400).json({ sucesso: false, mensagem: 'CEP e endereço completo são obrigatórios.' });
+    }
+
+    // Verifica se cliente existe
+    const cliente = db.prepare('SELECT id FROM usuarios WHERE id = ?').get(cId);
+    if (!cliente) {
+      return res.status(404).json({ sucesso: false, mensagem: 'Usuário cliente não encontrado.' });
     }
 
     const stmt = db.prepare(`
@@ -115,8 +181,7 @@ exports.criarOrdem = (req, res) => {
       VALUES (?, ?, ?, ?, ?, ?, ?, 'PENDENTE')
     `);
 
-    const result = stmt.run(cliente_id, categoria, titulo, descricao, cep, endereco, urgencia || 'MEDIA');
-
+    const result = stmt.run(cId, categoria, tituloSan, descricaoSan, cepSan, enderecoSan, urgenciaVal);
     const novaOrdem = db.prepare('SELECT * FROM ordens_servico WHERE id = ?').get(result.lastInsertRowid);
 
     res.status(201).json({
@@ -125,21 +190,36 @@ exports.criarOrdem = (req, res) => {
       dados: novaOrdem
     });
   } catch (error) {
-    res.status(500).json({ sucesso: false, mensagem: error.message });
+    console.error('[ERRO criarOrdem]:', error);
+    res.status(500).json({ sucesso: false, mensagem: 'Erro interno ao criar solicitação.' });
   }
 };
 
-// Enviar proposta de orçamento (Prestador)
+// 4. Enviar proposta de orçamento com verificação de valores
 exports.enviarProposta = (req, res) => {
   try {
-    const { id } = req.params; // ordem_id
+    const id = parseInt(req.params.id, 10);
     const { prestador_id, valor, prazo_estimado, mensagem } = req.body;
 
-    if (!prestador_id || !valor || !prazo_estimado) {
+    const pId = parseInt(prestador_id, 10);
+    const valorNum = parseFloat(valor);
+
+    if (isNaN(id) || isNaN(pId) || isNaN(valorNum)) {
+      return res.status(400).json({ sucesso: false, mensagem: 'Parâmetros numéricos inválidos.' });
+    }
+
+    if (valorNum <= 0 || valorNum > 100000) {
       return res.status(400).json({
         sucesso: false,
-        mensagem: 'Informe prestador_id, valor e prazo_estimado.'
+        mensagem: 'O valor da mão de obra deve ser um número positivo entre R$ 1,00 e R$ 100.000,00.'
       });
+    }
+
+    const prazoSan = sanitizarTexto(prazo_estimado, 100);
+    const msgSan = sanitizarTexto(mensagem, 1000);
+
+    if (!prazoSan) {
+      return res.status(400).json({ sucesso: false, mensagem: 'Informe a estimativa de prazo para o serviço.' });
     }
 
     const ordem = db.prepare('SELECT * FROM ordens_servico WHERE id = ?').get(id);
@@ -150,8 +230,14 @@ exports.enviarProposta = (req, res) => {
     if (ordem.status !== 'PENDENTE' && ordem.status !== 'PROPOSTA_RECEBIDA') {
       return res.status(400).json({
         sucesso: false,
-        mensagem: `Não é possível enviar proposta para ordem com status ${ordem.status}.`
+        mensagem: `Não é permitido enviar propostas para ordem com status '${ordem.status}'.`
       });
+    }
+
+    // Verifica se prestador existe e é do tipo PRESTADOR
+    const prestador = db.prepare("SELECT id, papel FROM usuarios WHERE id = ?").get(pId);
+    if (!prestador || prestador.papel !== 'PRESTADOR') {
+      return res.status(400).json({ sucesso: false, mensagem: 'Apenas usuários com perfil de Prestador podem enviar propostas.' });
     }
 
     const stmt = db.prepare(`
@@ -159,9 +245,8 @@ exports.enviarProposta = (req, res) => {
       VALUES (?, ?, ?, ?, ?)
     `);
 
-    const result = stmt.run(id, prestador_id, parseFloat(valor), prazo_estimado, mensagem || '');
+    const result = stmt.run(id, pId, valorNum, prazoSan, msgSan);
 
-    // Atualiza status da ordem para PROPOSTA_RECEBIDA
     db.prepare(`UPDATE ordens_servico SET status = 'PROPOSTA_RECEBIDA' WHERE id = ? AND status = 'PENDENTE'`).run(id);
 
     res.status(201).json({
@@ -170,71 +255,100 @@ exports.enviarProposta = (req, res) => {
       proposta_id: result.lastInsertRowid
     });
   } catch (error) {
-    res.status(500).json({ sucesso: false, mensagem: error.message });
+    console.error('[ERRO enviarProposta]:', error);
+    res.status(500).json({ sucesso: false, mensagem: 'Erro interno ao enviar proposta.' });
   }
 };
 
-// Checkout com retenção dos fundos em Custódia (Escrow)
+// 5. Checkout com Escrow Protegido e Transação Atômica (Anti Double-Spending)
 exports.checkoutCustodia = (req, res) => {
   try {
-    const { id } = req.params;
+    const id = parseInt(req.params.id, 10);
     const { proposta_id, metodo_pagamento, cupom } = req.body;
+
+    if (isNaN(id) || id <= 0) {
+      return res.status(400).json({ sucesso: false, mensagem: 'ID de ordem inválido.' });
+    }
 
     const ordem = db.prepare('SELECT * FROM ordens_servico WHERE id = ?').get(id);
     if (!ordem) {
       return res.status(404).json({ sucesso: false, mensagem: 'Ordem de serviço não encontrada.' });
     }
 
+    // Prevenção de pagamento duplicado / Double-spending
+    if (ordem.status !== 'PENDENTE' && ordem.status !== 'PROPOSTA_RECEBIDA') {
+      return res.status(400).json({
+        sucesso: false,
+        mensagem: `Operação recusada: Esta ordem já possui pagamento processado ou status '${ordem.status}'.`
+      });
+    }
+
     let proposta;
     if (proposta_id) {
-      proposta = db.prepare('SELECT * FROM propostas WHERE id = ? AND ordem_id = ?').get(proposta_id, id);
+      const pId = parseInt(proposta_id, 10);
+      proposta = db.prepare('SELECT * FROM propostas WHERE id = ? AND ordem_id = ?').get(pId, id);
     } else {
       proposta = db.prepare('SELECT * FROM propostas WHERE ordem_id = ? ORDER BY id DESC LIMIT 1').get(id);
     }
 
     if (!proposta) {
-      return res.status(400).json({ sucesso: false, mensagem: 'Nenhuma proposta selecionada para esta ordem.' });
+      return res.status(400).json({ sucesso: false, mensagem: 'Nenhuma proposta válida encontrada para contratação.' });
     }
 
     const valorMaoObra = parseFloat(proposta.valor);
-    let taxaPlataforma = Math.round(valorMaoObra * 0.08 * 100) / 100; // 8% de intermediação
-    if (taxaPlataforma < 15.0) taxaPlataforma = 15.0; // taxa mínima
+    if (isNaN(valorMaoObra) || valorMaoObra <= 0) {
+      return res.status(400).json({ sucesso: false, mensagem: 'Valor de mão de obra inválido.' });
+    }
 
-    if (cupom && cupom.toUpperCase() === 'FREELA10') {
+    let taxaPlataforma = Math.round(valorMaoObra * 0.08 * 100) / 100;
+    if (taxaPlataforma < 15.0) taxaPlataforma = 15.0;
+
+    const cupomSan = sanitizarTexto(cupom, 20).toUpperCase();
+    if (cupomSan === 'FREELA10') {
       taxaPlataforma = Math.round(taxaPlataforma * 0.5 * 100) / 100; // 50% de desconto na taxa
     }
 
-    const valorTotal = valorMaoObra + taxaPlataforma;
+    const valorTotal = Math.round((valorMaoObra + taxaPlataforma) * 100) / 100;
+    const metodoSan = (metodo_pagamento === 'CARTAO_CREDITO') ? 'CARTAO_CREDITO' : 'PIX';
 
-    // Atualiza proposta para ACEITA
-    db.prepare(`UPDATE propostas SET status = 'ACEITA' WHERE id = ?`).run(proposta.id);
-    db.prepare(`UPDATE propostas SET status = 'RECUSADA' WHERE ordem_id = ? AND id != ?`).run(id, proposta.id);
+    // Transação Atômica: garante que ou tudo executa ou nada é gravado
+    db.exec('BEGIN TRANSACTION;');
+    try {
+      // 1. Atualiza propostas
+      db.prepare(`UPDATE propostas SET status = 'ACEITA' WHERE id = ?`).run(proposta.id);
+      db.prepare(`UPDATE propostas SET status = 'RECUSADA' WHERE ordem_id = ? AND id != ?`).run(id, proposta.id);
 
-    // Atualiza ordem para EM_CUSTODIA
-    db.prepare(`
-      UPDATE ordens_servico 
-      SET prestador_id = ?,
-          valor_mao_obra = ?,
-          taxa_plataforma = ?,
-          valor_total = ?,
-          metodo_pagamento = ?,
-          status = 'EM_CUSTODIA',
-          atualizado_em = CURRENT_TIMESTAMP
-      WHERE id = ?
-    `).run(proposta.prestador_id, valorMaoObra, taxaPlataforma, valorTotal, metodo_pagamento || 'PIX', id);
+      // 2. Atualiza ordem para EM_CUSTODIA
+      db.prepare(`
+        UPDATE ordens_servico 
+        SET prestador_id = ?,
+            valor_mao_obra = ?,
+            taxa_plataforma = ?,
+            valor_total = ?,
+            metodo_pagamento = ?,
+            status = 'EM_CUSTODIA',
+            atualizado_em = CURRENT_TIMESTAMP
+        WHERE id = ?
+      `).run(proposta.prestador_id, valorMaoObra, taxaPlataforma, valorTotal, metodoSan, id);
 
-    // Registra transação de retenção sob custódia
-    db.prepare(`
-      INSERT INTO transacoes_custodia (ordem_id, valor, tipo, status, detalhes)
-      VALUES (?, ?, 'BLOQUEIO_ESCROW', 'CONFIRMADO', ?)
-    `).run(id, valorTotal, `Pagamento recebido via ${metodo_pagamento || 'PIX'}. Saldo retido em conta escrow protegida.`);
+      // 3. Registra transação de retenção sob custódia
+      db.prepare(`
+        INSERT INTO transacoes_custodia (ordem_id, valor, tipo, status, detalhes)
+        VALUES (?, ?, 'BLOQUEIO_ESCROW', 'CONFIRMADO', ?)
+      `).run(id, valorTotal, `Pagamento recebido via ${metodoSan}. Saldo retido em conta escrow protegida.`);
 
-    // Atualiza saldo em custódia do prestador
-    db.prepare(`
-      UPDATE usuarios 
-      SET saldo_custodia = saldo_custodia + ? 
-      WHERE id = ?
-    `).run(valorMaoObra, proposta.prestador_id);
+      // 4. Bloqueia valor na custódia do prestador
+      db.prepare(`
+        UPDATE usuarios 
+        SET saldo_custodia = saldo_custodia + ? 
+        WHERE id = ?
+      `).run(valorMaoObra, proposta.prestador_id);
+
+      db.exec('COMMIT;');
+    } catch (txError) {
+      db.exec('ROLLBACK;');
+      throw txError;
+    }
 
     res.json({
       sucesso: true,
@@ -249,21 +363,22 @@ exports.checkoutCustodia = (req, res) => {
       }
     });
   } catch (error) {
-    res.status(500).json({ sucesso: false, mensagem: error.message });
+    console.error('[ERRO checkoutCustodia]:', error);
+    res.status(500).json({ sucesso: false, mensagem: 'Erro transacional no processamento do checkout.' });
   }
 };
 
-// Atualizar status da ordem de serviço (Prestador)
+// 6. Atualizar status de execução com controle rigoroso de transição
 exports.atualizarStatus = (req, res) => {
   try {
-    const { id } = req.params;
+    const id = parseInt(req.params.id, 10);
     const { novo_status, foto_conclusao } = req.body;
 
-    const statusValidos = ['A_CAMINHO', 'EM_EXECUCAO', 'AGUARDANDO_VISTORIA'];
-    if (!statusValidos.includes(novo_status)) {
+    const transicoesPermitidas = ['A_CAMINHO', 'EM_EXECUCAO', 'AGUARDANDO_VISTORIA'];
+    if (!transicoesPermitidas.includes(novo_status)) {
       return res.status(400).json({
         sucesso: false,
-        mensagem: `Status inválido. Escolha um dos seguintes: ${statusValidos.join(', ')}`
+        mensagem: `Transição inválida. Permitidas: ${transicoesPermitidas.join(', ')}`
       });
     }
 
@@ -272,13 +387,24 @@ exports.atualizarStatus = (req, res) => {
       return res.status(404).json({ sucesso: false, mensagem: 'Ordem de serviço não encontrada.' });
     }
 
+    // A ordem precisa estar em custódia ou em andamento
+    const estadosOperaveis = ['EM_CUSTODIA', 'A_CAMINHO', 'EM_EXECUCAO'];
+    if (!estadosOperaveis.includes(ordem.status)) {
+      return res.status(400).json({
+        sucesso: false,
+        mensagem: `Não é possível atualizar status de uma ordem com status '${ordem.status}'.`
+      });
+    }
+
+    const fotoSan = sanitizarTexto(foto_conclusao, 500);
+
     db.prepare(`
       UPDATE ordens_servico 
       SET status = ?, 
           foto_conclusao = COALESCE(?, foto_conclusao),
           atualizado_em = CURRENT_TIMESTAMP
       WHERE id = ?
-    `).run(novo_status, foto_conclusao || null, id);
+    `).run(novo_status, fotoSan || null, id);
 
     res.json({
       sucesso: true,
@@ -286,14 +412,15 @@ exports.atualizarStatus = (req, res) => {
       novo_status
     });
   } catch (error) {
-    res.status(500).json({ sucesso: false, mensagem: error.message });
+    console.error('[ERRO atualizarStatus]:', error);
+    res.status(500).json({ sucesso: false, mensagem: 'Falha ao atualizar status da ordem.' });
   }
 };
 
-// Aprovação da Vistoria pelo Cliente e Liberação da Custódia
+// 7. Aprovação da Vistoria e Liquidação Atômica do Escrow
 exports.aprovarVistoria = (req, res) => {
   try {
-    const { id } = req.params;
+    const id = parseInt(req.params.id, 10);
     const { nota, comentario, cliente_id } = req.body;
 
     const ordem = db.prepare('SELECT * FROM ordens_servico WHERE id = ?').get(id);
@@ -304,45 +431,54 @@ exports.aprovarVistoria = (req, res) => {
     if (ordem.status !== 'AGUARDANDO_VISTORIA' && ordem.status !== 'EM_EXECUCAO') {
       return res.status(400).json({
         sucesso: false,
-        mensagem: `A ordem deve estar aguardando vistoria para aprovação. Status atual: ${ordem.status}`
+        mensagem: `A ordem deve estar aguardando vistoria para aprovação. Status atual: '${ordem.status}'.`
       });
     }
 
-    // 1. Marca ordem como CONCLUIDO
-    db.prepare(`
-      UPDATE ordens_servico 
-      SET status = 'CONCLUIDO', atualizado_em = CURRENT_TIMESTAMP
-      WHERE id = ?
-    `).run(id);
+    const valorRepasse = parseFloat(ordem.valor_mao_obra);
+    const notaNum = Math.max(1, Math.min(5, parseInt(nota, 10) || 5));
+    const comentarioSan = sanitizarTexto(comentario, 500) || 'Serviço aprovado na vistoria presencial.';
 
-    // 2. Escrow Engine: Libera o saldo em custódia para saldo disponível do prestador
-    const valorRepasse = ordem.valor_mao_obra;
-    db.prepare(`
-      UPDATE usuarios 
-      SET saldo_custodia = MAX(0, saldo_custodia - ?),
-          saldo_disponivel = saldo_disponivel + ?
-      WHERE id = ?
-    `).run(valorRepasse, valorRepasse, ordem.prestador_id);
+    db.exec('BEGIN TRANSACTION;');
+    try {
+      // 1. Marca ordem como CONCLUIDO
+      db.prepare(`
+        UPDATE ordens_servico 
+        SET status = 'CONCLUIDO', atualizado_em = CURRENT_TIMESTAMP
+        WHERE id = ?
+      `).run(id);
 
-    // 3. Registra transação de liquidação do repasse
-    db.prepare(`
-      INSERT INTO transacoes_custodia (ordem_id, valor, tipo, status, detalhes)
-      VALUES (?, ?, 'LIBERACAO_REPASSE', 'CONFIRMADO', 'Vistoria aprovada pelo cliente. Valor repassado à carteira do prestador.')
-    `).run(id, valorRepasse);
+      // 2. Transfere saldo da custódia para saldo disponível do prestador
+      db.prepare(`
+        UPDATE usuarios 
+        SET saldo_custodia = MAX(0, saldo_custodia - ?),
+            saldo_disponivel = saldo_disponivel + ?
+        WHERE id = ?
+      `).run(valorRepasse, valorRepasse, ordem.prestador_id);
 
-    // 4. Registra avaliação caso informada
-    if (nota) {
-      const notaInt = Math.max(1, Math.min(5, parseInt(nota, 10)));
+      // 3. Registra transação de liquidação
+      db.prepare(`
+        INSERT INTO transacoes_custodia (ordem_id, valor, tipo, status, detalhes)
+        VALUES (?, ?, 'LIBERACAO_REPASSE', 'CONFIRMADO', 'Vistoria aprovada. Valor transferido à carteira do prestador.')
+      `).run(id, valorRepasse);
+
+      // 4. Registra avaliação
+      const avaliadorId = parseInt(cliente_id, 10) || ordem.cliente_id;
       db.prepare(`
         INSERT INTO avaliacoes (ordem_id, avaliador_id, avaliado_id, nota, comentario)
         VALUES (?, ?, ?, ?, ?)
-      `).run(id, cliente_id || ordem.cliente_id, ordem.prestador_id, notaInt, comentario || 'Serviço aprovado');
+      `).run(id, avaliadorId, ordem.prestador_id, notaNum, comentarioSan);
 
-      // Recalcula média de reputação do prestador
+      // 5. Recalcula reputação com média ponderada
       const avg = db.prepare(`SELECT AVG(nota) as media FROM avaliacoes WHERE avaliado_id = ?`).get(ordem.prestador_id);
       if (avg && avg.media) {
         db.prepare(`UPDATE usuarios SET reputacao = ROUND(?, 1) WHERE id = ?`).run(avg.media, ordem.prestador_id);
       }
+
+      db.exec('COMMIT;');
+    } catch (txError) {
+      db.exec('ROLLBACK;');
+      throw txError;
     }
 
     res.json({
@@ -352,20 +488,33 @@ exports.aprovarVistoria = (req, res) => {
       status: 'CONCLUIDO'
     });
   } catch (error) {
-    res.status(500).json({ sucesso: false, mensagem: error.message });
+    console.error('[ERRO aprovarVistoria]:', error);
+    res.status(500).json({ sucesso: false, mensagem: 'Erro transacional na liberação de vistoria.' });
   }
 };
 
-// Abertura de Disputa / Contestação pelo Cliente
+// 8. Abertura de Disputa / Contestação
 exports.abrirDisputa = (req, res) => {
   try {
-    const { id } = req.params;
+    const id = parseInt(req.params.id, 10);
     const { motivo, detalhes } = req.body;
 
     const ordem = db.prepare('SELECT * FROM ordens_servico WHERE id = ?').get(id);
     if (!ordem) {
       return res.status(404).json({ sucesso: false, mensagem: 'Ordem de serviço não encontrada.' });
     }
+
+    // Apenas ordens ativas com fundos em custódia podem ser contestadas
+    const estadosDisputaveis = ['EM_CUSTODIA', 'A_CAMINHO', 'EM_EXECUCAO', 'AGUARDANDO_VISTORIA'];
+    if (!estadosDisputaveis.includes(ordem.status)) {
+      return res.status(400).json({
+        sucesso: false,
+        mensagem: `Não é possível abrir disputa em uma ordem com status '${ordem.status}'.`
+      });
+    }
+
+    const motivoSan = sanitizarTexto(motivo, 255) || 'Serviço com inconformidade presencial.';
+    const detalhesSan = sanitizarTexto(detalhes, 1000);
 
     db.prepare(`
       UPDATE ordens_servico 
@@ -376,7 +525,7 @@ exports.abrirDisputa = (req, res) => {
     db.prepare(`
       INSERT INTO transacoes_custodia (ordem_id, valor, tipo, status, detalhes)
       VALUES (?, ?, 'ESTORNO_DISPUTA', 'EM_ANALISE', ?)
-    `).run(id, ordem.valor_total, `Disputa aberta pelo cliente. Motivo: ${motivo || 'Serviço inconforme'}. Saldo congelado.`);
+    `).run(id, ordem.valor_total, `Disputa aberta. Motivo: ${motivoSan}. Saldo retido preventivamente.`);
 
     res.json({
       sucesso: true,
@@ -384,11 +533,12 @@ exports.abrirDisputa = (req, res) => {
       status: 'EM_DISPUTA'
     });
   } catch (error) {
-    res.status(500).json({ sucesso: false, mensagem: error.message });
+    console.error('[ERRO abrirDisputa]:', error);
+    res.status(500).json({ sucesso: false, mensagem: 'Falha ao registrar disputa.' });
   }
 };
 
-// Obter Estatísticas Gerais do Sistema (KPIs do Dashboard)
+// 9. Estatísticas do Sistema
 exports.obterEstatisticas = (req, res) => {
   try {
     const totalOrdens = db.prepare('SELECT COUNT(*) as total FROM ordens_servico').get().total;
@@ -408,16 +558,18 @@ exports.obterEstatisticas = (req, res) => {
       }
     });
   } catch (error) {
-    res.status(500).json({ sucesso: false, mensagem: error.message });
+    console.error('[ERRO obterEstatisticas]:', error);
+    res.status(500).json({ sucesso: false, mensagem: 'Erro ao calcular estatísticas.' });
   }
 };
 
-// Listar Usuários cadastrados (para troca de perfil na demonstração)
+// 10. Listar Usuários
 exports.listarUsuarios = (req, res) => {
   try {
-    const usuarios = db.prepare('SELECT * FROM usuarios ORDER BY id ASC').all();
+    const usuarios = db.prepare('SELECT id, nome, email, papel, telefone, especialidade, reputacao, saldo_disponivel, saldo_custodia, verificado FROM usuarios ORDER BY id ASC').all();
     res.json({ sucesso: true, dados: usuarios });
   } catch (error) {
-    res.status(500).json({ sucesso: false, mensagem: error.message });
+    console.error('[ERRO listarUsuarios]:', error);
+    res.status(500).json({ sucesso: false, mensagem: 'Erro ao listar usuários.' });
   }
 };

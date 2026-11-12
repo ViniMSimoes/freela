@@ -1,4 +1,4 @@
-// FreeLA SaaS — Frontend Controller & API Client
+// FreeLA SaaS — Frontend Controller & API Client (Hardened)
 
 let state = {
   currentRole: 'CLIENTE', // 'CLIENTE' ou 'PRESTADOR'
@@ -8,6 +8,17 @@ let state = {
   stats: {},
   usuarios: []
 };
+
+// Função de Sanitização para Prevenção de XSS (Cross-Site Scripting)
+function escapeHtml(str) {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
 
 // Inicialização
 document.addEventListener('DOMContentLoaded', async () => {
@@ -48,11 +59,11 @@ async function carregarEstatisticas() {
   }
 }
 
-// Carregar Ordens de Serviço
+// Carregar Ordens de Serviço com Parâmetros Codificados
 async function carregarOrdens() {
   try {
-    const statusFiltro = document.getElementById('filtro-status').value;
-    const catFiltro = document.getElementById('filtro-categoria').value;
+    const statusFiltro = encodeURIComponent(document.getElementById('filtro-status').value);
+    const catFiltro = encodeURIComponent(document.getElementById('filtro-categoria').value);
     
     let url = '/api/ordens?';
     if (statusFiltro) url += `status=${statusFiltro}&`;
@@ -69,7 +80,7 @@ async function carregarOrdens() {
   }
 }
 
-// Renderizar Cards de Ordens
+// Renderizar Cards de Ordens com Sanitização Anti-XSS
 function renderizarOrdens() {
   const container = document.getElementById('orders-container');
   container.innerHTML = '';
@@ -84,36 +95,38 @@ function renderizarOrdens() {
   }
 
   state.ordens.forEach(o => {
+    const orderId = parseInt(o.id, 10);
     const card = document.createElement('div');
     card.className = 'order-card';
 
-    // Ações contextuais de acordo com o papel e status
     let actionButtons = '';
 
     if (state.currentRole === 'CLIENTE') {
       if (o.status === 'PENDENTE' || o.status === 'PROPOSTA_RECEBIDA') {
-        actionButtons = `<button class="btn btn-secondary btn-sm" onclick="abrirModalDetalhes(${o.id})">Ver Propostas (${o.total_propostas})</button>`;
+        actionButtons = `<button class="btn btn-secondary btn-sm" onclick="abrirModalDetalhes(${orderId})">Ver Propostas (${parseInt(o.total_propostas, 10)})</button>`;
       } else if (o.status === 'AGUARDANDO_VISTORIA') {
         actionButtons = `
-          <button class="btn btn-success btn-sm" onclick="abrirModalAprovacao(${o.id})">Aprovar & Liberar</button>
-          <button class="btn btn-danger btn-sm" onclick="abrirModalDisputa(${o.id})">Disputa</button>
+          <button class="btn btn-success btn-sm" onclick="abrirModalAprovacao(${orderId})">Aprovar & Liberar</button>
+          <button class="btn btn-danger btn-sm" onclick="abrirModalDisputa(${orderId})">Disputa</button>
         `;
       } else if (o.status === 'EM_CUSTODIA' || o.status === 'A_CAMINHO' || o.status === 'EM_EXECUCAO') {
         actionButtons = `<span style="font-size: 12px; color: #0284C7; font-weight: 600;">Em andamento</span>`;
       } else if (o.status === 'CONCLUIDO') {
         actionButtons = `<span style="font-size: 12px; color: #166534; font-weight: 600;">✓ Pago & Finalizado</span>`;
+      } else if (o.status === 'EM_DISPUTA') {
+        actionButtons = `<span style="font-size: 12px; color: #DC2626; font-weight: 600;">Em mediação</span>`;
       }
     } else {
       // PRESTADOR
       if (o.status === 'PENDENTE' || o.status === 'PROPOSTA_RECEBIDA') {
-        actionButtons = `<button class="btn btn-primary btn-sm" onclick="abrirModalProposta(${o.id})">Enviar Orçamento</button>`;
+        actionButtons = `<button class="btn btn-primary btn-sm" onclick="abrirModalProposta(${orderId})">Enviar Orçamento</button>`;
       } else if (o.prestador_id === state.currentUser.id) {
         if (o.status === 'EM_CUSTODIA') {
-          actionButtons = `<button class="btn btn-secondary btn-sm" onclick="atualizarStatusOrdem(${o.id}, 'A_CAMINHO')">A Caminho</button>`;
+          actionButtons = `<button class="btn btn-secondary btn-sm" onclick="atualizarStatusOrdem(${orderId}, 'A_CAMINHO')">A Caminho</button>`;
         } else if (o.status === 'A_CAMINHO') {
-          actionButtons = `<button class="btn btn-primary btn-sm" onclick="atualizarStatusOrdem(${o.id}, 'EM_EXECUCAO')">Iniciar Reparo</button>`;
+          actionButtons = `<button class="btn btn-primary btn-sm" onclick="atualizarStatusOrdem(${orderId}, 'EM_EXECUCAO')">Iniciar Reparo</button>`;
         } else if (o.status === 'EM_EXECUCAO') {
-          actionButtons = `<button class="btn btn-success btn-sm" onclick="atualizarStatusOrdem(${o.id}, 'AGUARDANDO_VISTORIA')">Concluir Reparo</button>`;
+          actionButtons = `<button class="btn btn-success btn-sm" onclick="atualizarStatusOrdem(${orderId}, 'AGUARDANDO_VISTORIA')">Concluir Reparo</button>`;
         } else if (o.status === 'AGUARDANDO_VISTORIA') {
           actionButtons = `<span style="font-size: 12px; color: #B45309; font-weight: 600;">Aguardando Vistoria</span>`;
         }
@@ -122,20 +135,20 @@ function renderizarOrdens() {
 
     const valorExibicao = o.valor_total > 0 
       ? `R$ ${Number(o.valor_total).toFixed(2)}` 
-      : (o.total_propostas > 0 ? `${o.total_propostas} proposta(s)` : 'Aguardando orçamento');
+      : (o.total_propostas > 0 ? `${parseInt(o.total_propostas, 10)} proposta(s)` : 'Aguardando orçamento');
 
     card.innerHTML = `
       <div>
         <div class="order-header">
-          <span class="order-category">${o.categoria}</span>
-          <span class="status-badge status-${o.status}">${formatarStatus(o.status)}</span>
+          <span class="order-category">${escapeHtml(o.categoria)}</span>
+          <span class="status-badge status-${escapeHtml(o.status)}">${formatarStatus(o.status)}</span>
         </div>
-        <h4 class="order-title">#${o.id} - ${o.titulo}</h4>
-        <p class="order-desc">${o.descricao}</p>
+        <h4 class="order-title">#${orderId} - ${escapeHtml(o.titulo)}</h4>
+        <p class="order-desc">${escapeHtml(o.descricao)}</p>
         <div class="order-meta">
-          <div><strong>Cliente:</strong> ${o.cliente_nome} (${o.cep})</div>
-          ${o.prestador_nome ? `<div><strong>Prestador:</strong> ${o.prestador_nome}</div>` : ''}
-          <div><strong>Urgência:</strong> ${o.urgencia}</div>
+          <div><strong>Cliente:</strong> ${escapeHtml(o.cliente_nome)} (${escapeHtml(o.cep)})</div>
+          ${o.prestador_nome ? `<div><strong>Prestador:</strong> ${escapeHtml(o.prestador_nome)}</div>` : ''}
+          <div><strong>Urgência:</strong> ${escapeHtml(o.urgencia)}</div>
         </div>
       </div>
       <div class="order-footer">
@@ -161,7 +174,7 @@ function formatarStatus(status) {
     'CONCLUIDO': 'Concluído',
     'EM_DISPUTA': 'Em Disputa'
   };
-  return mapa[status] || status;
+  return mapa[status] || escapeHtml(status);
 }
 
 // Configurar Event Listeners
@@ -185,12 +198,17 @@ function setupEventListeners() {
   // Formulário de Nova Solicitação
   document.getElementById('form-nova-solicitacao').addEventListener('submit', async (e) => {
     e.preventDefault();
-    const titulo = document.getElementById('input-titulo').value;
+    const titulo = document.getElementById('input-titulo').value.trim();
     const categoria = document.getElementById('select-categoria').value;
-    const descricao = document.getElementById('input-descricao').value;
-    const cep = document.getElementById('input-cep').value;
-    const endereco = document.getElementById('input-endereco').value;
+    const descricao = document.getElementById('input-descricao').value.trim();
+    const cep = document.getElementById('input-cep').value.trim();
+    const endereco = document.getElementById('input-endereco').value.trim();
     const urgencia = document.getElementById('select-urgencia').value;
+
+    if (!titulo || !descricao || !cep || !endereco) {
+      alert('Por favor, preencha todos os campos obrigatórios.');
+      return;
+    }
 
     try {
       const res = await fetch('/api/ordens', {
@@ -245,10 +263,11 @@ function trocarAba(aba) {
   }
 }
 
-// Modal de Detalhes e Checkout para o Cliente
+// Modal de Detalhes e Checkout Sanitizado
 async function abrirModalDetalhes(ordemId) {
+  const safeId = parseInt(ordemId, 10);
   try {
-    const res = await fetch(`/api/ordens/${ordemId}`);
+    const res = await fetch(`/api/ordens/${safeId}`);
     const json = await res.json();
     if (!json.sucesso) return alert(json.mensagem);
 
@@ -260,28 +279,32 @@ async function abrirModalDetalhes(ordemId) {
     if (o.propostas.length === 0) {
       propostasHtml = '<p style="color: #64748B;">Nenhum orçamento enviado até o momento.</p>';
     } else {
-      propostasHtml = o.propostas.map(p => `
-        <div style="border: 1px solid #E2E8F0; padding: 12px; border-radius: 6px; margin-bottom: 8px; background: #F8FAFC;">
-          <div style="display: flex; justify-content: space-between; align-items: center;">
-            <strong>${p.prestador_nome} (★ ${p.prestador_reputacao})</strong>
-            <span style="font-weight: 700; color: #0F172A;">R$ ${Number(p.valor).toFixed(2)}</span>
+      propostasHtml = o.propostas.map(p => {
+        const propId = parseInt(p.id, 10);
+        const valorProp = Number(p.valor);
+        return `
+          <div style="border: 1px solid #E2E8F0; padding: 12px; border-radius: 6px; margin-bottom: 8px; background: #F8FAFC;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <strong>${escapeHtml(p.prestador_nome)} (★ ${Number(p.prestador_reputacao).toFixed(1)})</strong>
+              <span style="font-weight: 700; color: #0F172A;">R$ ${valorProp.toFixed(2)}</span>
+            </div>
+            <p style="font-size: 12px; color: #475569; margin: 4px 0;">Prazo: ${escapeHtml(p.prazo_estimado)}</p>
+            <p style="font-size: 12px; color: #334155;">"${escapeHtml(p.mensagem)}"</p>
+            <button class="btn btn-primary btn-sm" style="margin-top: 8px;" onclick="confirmarCheckout(${safeId}, ${propId}, ${valorProp})">
+              Contratar com Custódia Protegida (Escrow)
+            </button>
           </div>
-          <p style="font-size: 12px; color: #475569; margin: 4px 0;">Prazo: ${p.prazo_estimado}</p>
-          <p style="font-size: 12px; color: #334155;">"${p.mensagem}"</p>
-          <button class="btn btn-primary btn-sm" style="margin-top: 8px;" onclick="confirmarCheckout(${o.id}, ${p.id}, ${p.valor})">
-            Contratar com Custódia Protegida (Escrow)
-          </button>
-        </div>
-      `).join('');
+        `;
+      }).join('');
     }
 
     modalBody.innerHTML = `
       <div class="modal-header">
-        <h3>Ordem de Serviço #${o.id} - ${o.titulo}</h3>
+        <h3>Ordem de Serviço #${safeId} - ${escapeHtml(o.titulo)}</h3>
         <button onclick="fecharModal()" style="border:none; background:none; font-size:18px; cursor:pointer;">&times;</button>
       </div>
-      <p style="margin-bottom: 12px;"><strong>Descrição:</strong> ${o.descricao}</p>
-      <p style="margin-bottom: 16px;"><strong>Endereço:</strong> ${o.endereco} (${o.cep})</p>
+      <p style="margin-bottom: 12px;"><strong>Descrição:</strong> ${escapeHtml(o.descricao)}</p>
+      <p style="margin-bottom: 16px;"><strong>Endereço:</strong> ${escapeHtml(o.endereco)} (${escapeHtml(o.cep)})</p>
       <h4 style="font-size: 14px; margin-bottom: 8px;">Propostas Recebidas:</h4>
       ${propostasHtml}
     `;
@@ -294,16 +317,18 @@ async function abrirModalDetalhes(ordemId) {
 
 // Confirmar Checkout com Custódia (Escrow)
 async function confirmarCheckout(ordemId, propostaId, valorMaoObra) {
+  const safeOrderId = parseInt(ordemId, 10);
+  const safePropId = parseInt(propostaId, 10);
   const cupom = prompt('Deseja aplicar um cupom de desconto na taxa? Digite FREELA10 para 50% off na intermediação ou deixe em branco:', 'FREELA10');
 
   try {
-    const res = await fetch(`/api/ordens/${ordemId}/checkout`, {
+    const res = await fetch(`/api/ordens/${safeOrderId}/checkout`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        proposta_id: propostaId,
+        proposta_id: safePropId,
         metodo_pagamento: 'PIX',
-        cupom: cupom || null
+        cupom: cupom ? cupom.trim() : null
       })
     });
     const json = await res.json();
@@ -322,29 +347,30 @@ async function confirmarCheckout(ordemId, propostaId, valorMaoObra) {
 
 // Modal para Prestador Enviar Orçamento
 function abrirModalProposta(ordemId) {
+  const safeId = parseInt(ordemId, 10);
   const modal = document.getElementById('modal');
   const modalBody = document.getElementById('modal-body');
 
   modalBody.innerHTML = `
     <div class="modal-header">
-      <h3>Enviar Proposta de Orçamento (OS #${ordemId})</h3>
+      <h3>Enviar Proposta de Orçamento (OS #${safeId})</h3>
       <button onclick="fecharModal()" style="border:none; background:none; font-size:18px; cursor:pointer;">&times;</button>
     </div>
     <div class="form-group">
       <label class="form-label">Valor da Mão de Obra (R$):</label>
-      <input type="number" id="prop-valor" class="form-input" placeholder="Ex: 220.00" step="0.50">
+      <input type="number" id="prop-valor" class="form-input" placeholder="Ex: 220.00" min="1" max="100000" step="0.50">
     </div>
     <div class="form-group">
       <label class="form-label">Estimativa de Prazo:</label>
-      <input type="text" id="prop-prazo" class="form-input" placeholder="Ex: Amanhã às 14h (2 horas de trabalho)">
+      <input type="text" id="prop-prazo" class="form-input" placeholder="Ex: Amanhã às 14h (2 horas de trabalho)" maxlength="100">
     </div>
     <div class="form-group">
       <label class="form-label">Mensagem técnica explicativa:</label>
-      <textarea id="prop-msg" class="form-textarea" rows="3" placeholder="Explique os materiais necessários ou sua experiência na área..."></textarea>
+      <textarea id="prop-msg" class="form-textarea" rows="3" placeholder="Explique os materiais necessários ou sua experiência na área..." maxlength="1000"></textarea>
     </div>
     <div class="modal-footer">
       <button class="btn btn-secondary" onclick="fecharModal()">Cancelar</button>
-      <button class="btn btn-primary" onclick="submeterProposta(${ordemId})">Enviar Proposta</button>
+      <button class="btn btn-primary" onclick="submeterProposta(${safeId})">Enviar Proposta</button>
     </div>
   `;
 
@@ -352,14 +378,16 @@ function abrirModalProposta(ordemId) {
 }
 
 async function submeterProposta(ordemId) {
-  const valor = document.getElementById('prop-valor').value;
-  const prazo_estimado = document.getElementById('prop-prazo').value;
-  const mensagem = document.getElementById('prop-msg').value;
+  const safeId = parseInt(ordemId, 10);
+  const valor = parseFloat(document.getElementById('prop-valor').value);
+  const prazo_estimado = document.getElementById('prop-prazo').value.trim();
+  const mensagem = document.getElementById('prop-msg').value.trim();
 
-  if (!valor || !prazo_estimado) return alert('Preencha o valor e o prazo.');
+  if (isNaN(valor) || valor <= 0) return alert('Informe um valor de mão de obra válido superior a zero.');
+  if (!prazo_estimado) return alert('Informe a estimativa de prazo.');
 
   try {
-    const res = await fetch(`/api/ordens/${ordemId}/propostas`, {
+    const res = await fetch(`/api/ordens/${safeId}/propostas`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -384,8 +412,9 @@ async function submeterProposta(ordemId) {
 
 // Atualizar Status da Ordem pelo Prestador
 async function atualizarStatusOrdem(ordemId, novoStatus) {
+  const safeId = parseInt(ordemId, 10);
   try {
-    const res = await fetch(`/api/ordens/${ordemId}/status`, {
+    const res = await fetch(`/api/ordens/${safeId}/status`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ novo_status: novoStatus })
@@ -404,12 +433,13 @@ async function atualizarStatusOrdem(ordemId, novoStatus) {
 
 // Modal de Vistoria e Aprovação Final (Liberação do Escrow)
 function abrirModalAprovacao(ordemId) {
+  const safeId = parseInt(ordemId, 10);
   const modal = document.getElementById('modal');
   const modalBody = document.getElementById('modal-body');
 
   modalBody.innerHTML = `
     <div class="modal-header">
-      <h3>Vistoria e Liberação de Repasse (OS #${ordemId})</h3>
+      <h3>Vistoria e Liberação de Repasse (OS #${safeId})</h3>
       <button onclick="fecharModal()" style="border:none; background:none; font-size:18px; cursor:pointer;">&times;</button>
     </div>
     <div class="escrow-banner" style="margin-bottom: 16px;">
@@ -430,11 +460,11 @@ function abrirModalAprovacao(ordemId) {
     </div>
     <div class="form-group">
       <label class="form-label">Comentário sobre a execução do reparo:</label>
-      <textarea id="aprov-comentario" class="form-textarea" rows="3" placeholder="Descreva a qualidade do reparo, pontualidade e limpeza..."></textarea>
+      <textarea id="aprov-comentario" class="form-textarea" rows="3" placeholder="Descreva a qualidade do reparo, pontualidade e limpeza..." maxlength="500"></textarea>
     </div>
     <div class="modal-footer">
       <button class="btn btn-secondary" onclick="fecharModal()">Cancelar</button>
-      <button class="btn btn-success" onclick="submeterAprovacao(${ordemId})">Aprovar Conclusão & Liberar Dinheiro</button>
+      <button class="btn btn-success" onclick="submeterAprovacao(${safeId})">Aprovar Conclusão & Liberar Dinheiro</button>
     </div>
   `;
 
@@ -442,11 +472,12 @@ function abrirModalAprovacao(ordemId) {
 }
 
 async function submeterAprovacao(ordemId) {
-  const nota = document.getElementById('aprov-nota').value;
-  const comentario = document.getElementById('aprov-comentario').value;
+  const safeId = parseInt(ordemId, 10);
+  const nota = parseInt(document.getElementById('aprov-nota').value, 10);
+  const comentario = document.getElementById('aprov-comentario').value.trim();
 
   try {
-    const res = await fetch(`/api/ordens/${ordemId}/aprovar`, {
+    const res = await fetch(`/api/ordens/${safeId}/aprovar`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -457,7 +488,7 @@ async function submeterAprovacao(ordemId) {
     });
     const json = await res.json();
     if (json.sucesso) {
-      alert(`SUCESSO!\n\n${json.mensagem}\nValor repassado: R$ ${json.valor_liberado.toFixed(2)}`);
+      alert(`SUCESSO!\n\n${json.mensagem}\nValor repassado: R$ ${Number(json.valor_liberado).toFixed(2)}`);
       fecharModal();
       await carregarEstatisticas();
       await carregarOrdens();
@@ -471,13 +502,14 @@ async function submeterAprovacao(ordemId) {
 
 // Modal de Abertura de Disputa
 function abrirModalDisputa(ordemId) {
+  const safeId = parseInt(ordemId, 10);
   const motivo = prompt('Por favor, descreva sucintamente a inconformidade identificada no reparo para acionar a mediação:');
   if (!motivo) return;
 
-  fetch(`/api/ordens/${ordemId}/disputa`, {
+  fetch(`/api/ordens/${safeId}/disputa`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ motivo })
+    body: JSON.stringify({ motivo: motivo.trim() })
   })
   .then(res => res.json())
   .then(json => {
