@@ -18,4 +18,9 @@ router.patch('/ordens/:id/status', controller.atualizarStatus);
 router.post('/ordens/:id/aprovar', controller.aprovarVistoria);
 router.post('/ordens/:id/disputa', controller.abrirDisputa);
 
+// Novas Funcionalidades: Livro-Razão Escrow, Saques e Mediação
+router.get('/transacoes', controller.listarTransacoes);
+router.post('/prestador/saque', controller.solicitarSaque);
+router.post('/disputas/:id/resolver', controller.resolverDisputa);
+
 module.exports = router;

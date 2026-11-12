@@ -3,24 +3,34 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>FreeLA — Contratação de Serviços com Custódia Protegida</title>
+  <title>FreeLA — SaaS de Serviços Residenciais com Custódia Protegida</title>
   <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
 
-  <!-- Header Superior -->
+  <!-- Header Superior Moderno -->
   <header>
     <div class="header-container">
       <div class="logo-area">
-        <div class="logo-badge">FREELA</div>
+        <div class="logo-badge">
+          <span>⚡</span> FREELA
+        </div>
         <div class="logo-text">
-          <h1>FreeLA SaaS</h1>
-          <p>Serviços Residenciais com Pagamento em Custódia (Escrow)</p>
+          <h1>FreeLA Platform</h1>
+          <p>Serviços Residenciais & Liquidação Protegida em Escrow</p>
         </div>
       </div>
       <div class="header-actions">
-        <div class="user-badge" id="user-badge-info">Carregando perfil...</div>
-        <button class="btn btn-secondary btn-sm" id="btn-switch-role">Alternar Papel</button>
+        <div class="user-profile-pill">
+          <div class="user-avatar" id="user-avatar">M</div>
+          <div>
+            <strong id="user-name" style="font-size: 13px;">Carregando...</strong>
+            <span class="role-pill" id="user-role-badge">CLIENTE</span>
+          </div>
+        </div>
+        <button class="btn btn-secondary btn-sm" id="btn-switch-role" title="Alternar visão entre Cliente e Prestador">
+          🔄 Alternar Papel
+        </button>
       </div>
     </div>
   </header>
@@ -30,140 +40,262 @@
     <!-- KPIs do Dashboard -->
     <section class="kpi-grid">
       <div class="kpi-card">
-        <div class="kpi-label">Total de Ordens</div>
+        <div class="kpi-header">
+          <span class="kpi-label">Ordens Cadastradas</span>
+          <span class="kpi-icon">📋</span>
+        </div>
         <div class="kpi-value" id="kpi-total">0</div>
-        <div class="kpi-sub">Demandas cadastradas</div>
+        <div class="kpi-sub">Total acumulado na plataforma</div>
       </div>
-      <div class="kpi-card">
-        <div class="kpi-label">Saldo em Custódia Protegida</div>
-        <div class="kpi-value" id="kpi-custodia">R$ 0,00</div>
-        <div class="kpi-sub">Retido até a vistoria do cliente</div>
+
+      <div class="kpi-card" style="border-left: 3px solid #F59E0B;">
+        <div class="kpi-header">
+          <span class="kpi-label">Saldo em Custódia (Escrow)</span>
+          <span class="kpi-icon">🛡️</span>
+        </div>
+        <div class="kpi-value" id="kpi-custodia" style="color: #B45309;">R$ 0,00</div>
+        <div class="kpi-sub">Protegido até a vistoria do cliente</div>
       </div>
-      <div class="kpi-card">
-        <div class="kpi-label">Total Repassado a Prestadores</div>
-        <div class="kpi-value" id="kpi-repassado">R$ 0,00</div>
-        <div class="kpi-sub">Liberado pós-aprovação</div>
+
+      <div class="kpi-card" style="border-left: 3px solid #10B981;">
+        <div class="kpi-header">
+          <span class="kpi-label">Total Repassado</span>
+          <span class="kpi-icon">💰</span>
+        </div>
+        <div class="kpi-value" id="kpi-repassado" style="color: #166534;">R$ 0,00</div>
+        <div class="kpi-sub">Transferido pós-aprovação formal</div>
       </div>
+
       <div class="kpi-card">
-        <div class="kpi-label">Prestadores Verificados</div>
+        <div class="kpi-header">
+          <span class="kpi-label">Profissionais Ativos</span>
+          <span class="kpi-icon">🛠️</span>
+        </div>
         <div class="kpi-value" id="kpi-prestadores">0</div>
-        <div class="kpi-sub">Profissionais ativos na região</div>
+        <div class="kpi-sub">Verificados na região de Volta Redonda</div>
       </div>
     </section>
 
-    <!-- Banner Explicativo de Custódia -->
+    <!-- Banner Educativo de Custódia -->
     <div class="escrow-banner">
-      <div class="escrow-banner-text">
-        <strong>Garantia de Execução & Pagamento em Custódia (Escrow)</strong>
-        <p>O cliente paga antecipadamente, mas o dinheiro fica retido pela plataforma FreeLA. O repasse só é liberado para a conta do profissional após o cliente inspecionar e aprovar a conclusão do reparo no local.</p>
+      <div class="escrow-banner-left">
+        <div class="escrow-shield-icon">🛡️</div>
+        <div class="escrow-banner-text">
+          <strong>Garantia Transacional FreeLA Escrow™</strong>
+          <p>O cliente paga antecipadamente, os fundos ficam bloqueados e protegidos em conta de custódia e o repasse ao prestador é liberado imediatamente após a aprovação da vistoria presencial.</p>
+        </div>
       </div>
       <button class="btn btn-primary btn-sm" onclick="trocarAba('nova')">+ Solicitar Reparo</button>
     </div>
 
-    <!-- Navegação por Abas -->
-    <div class="tabs-nav">
-      <button class="tab-btn active" id="tab-btn-mural" onclick="trocarAba('mural')">Mural de Ordens de Serviço</button>
-      <button class="tab-btn" id="tab-btn-nova" onclick="trocarAba('nova')">Nova Solicitação de Reparo</button>
+    <!-- Navegação por Abas Enriquecidas -->
+    <div class="nav-tabs-wrapper">
+      <div class="tabs-nav">
+        <button class="tab-btn active" id="tab-btn-mural" onclick="trocarAba('mural')">
+          <span>📋</span> Mural de Ordens <span class="tab-badge" id="badge-total-ordens">0</span>
+        </button>
+        <button class="tab-btn" id="tab-btn-nova" onclick="trocarAba('nova')">
+          <span>➕</span> Nova Solicitação
+        </button>
+        <button class="tab-btn" id="tab-btn-escrow" onclick="trocarAba('escrow')">
+          <span>🛡️</span> Livro-Razão Escrow <span class="tab-badge" id="badge-total-transacoes">0</span>
+        </button>
+        <button class="tab-btn" id="tab-btn-carteira" onclick="trocarAba('carteira')">
+          <span>💼</span> Carteira do Prestador
+        </button>
+        <button class="tab-btn" id="tab-btn-disputas" onclick="trocarAba('disputas')">
+          <span>⚖️</span> Mediação & Disputas <span class="tab-badge" id="badge-total-disputas" style="background:#FEE2E2; color:#991B1B;">0</span>
+        </button>
+      </div>
     </div>
 
-    <!-- Conteúdo Aba 1: Mural de Ordens -->
+    <!-- ABA 1: Mural de Ordens com Busca e Filtros -->
     <div id="tab-mural" class="tab-content">
-      <!-- Barra de Filtros -->
-      <div class="filters-bar">
-        <select id="filtro-status" class="select-filter">
-          <option value="">Todos os Status</option>
-          <option value="PENDENTE">Pendente</option>
-          <option value="PROPOSTA_RECEBIDA">Com Propostas</option>
-          <option value="EM_CUSTODIA">Em Custódia</option>
-          <option value="A_CAMINHO">A Caminho</option>
-          <option value="EM_EXECUCAO">Em Execução</option>
-          <option value="AGUARDANDO_VISTORIA">Vistoria Pendente</option>
-          <option value="CONCLUIDO">Concluído</option>
-          <option value="EM_DISPUTA">Em Disputa</option>
-        </select>
+      <div class="controls-bar">
+        <div class="search-box">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="filtro-busca" class="search-input" placeholder="Buscar por título, defeito, CEP ou endereço...">
+        </div>
+        <div class="filters-group">
+          <select id="filtro-status" class="select-filter">
+            <option value="">Todos os Status</option>
+            <option value="PENDENTE">Pendente</option>
+            <option value="PROPOSTA_RECEBIDA">Com Propostas</option>
+            <option value="EM_CUSTODIA">Em Custódia</option>
+            <option value="A_CAMINHO">A Caminho</option>
+            <option value="EM_EXECUCAO">Em Execução</option>
+            <option value="AGUARDANDO_VISTORIA">Vistoria Pendente</option>
+            <option value="CONCLUIDO">Concluído</option>
+            <option value="EM_DISPUTA">Em Disputa</option>
+          </select>
 
-        <select id="filtro-categoria" class="select-filter">
-          <option value="">Todas as Categorias</option>
-          <option value="Elétrica">Elétrica</option>
-          <option value="Hidráulica">Hidráulica</option>
-          <option value="Pintura">Pintura</option>
-          <option value="Alvenaria">Alvenaria</option>
-          <option value="Climatização">Climatização</option>
-        </select>
+          <select id="filtro-categoria" class="select-filter">
+            <option value="">Todas as Especialidades</option>
+            <option value="Elétrica">⚡ Elétrica</option>
+            <option value="Hidráulica">💧 Hidráulica</option>
+            <option value="Pintura">🎨 Pintura</option>
+            <option value="Alvenaria">🧱 Alvenaria</option>
+            <option value="Climatização">❄️ Climatização</option>
+          </select>
+        </div>
       </div>
 
-      <!-- Grid de Ordens -->
       <div class="orders-grid" id="orders-container">
-        <!-- Inserido dinamicamente via JS -->
+        <!-- Renderizado dinamicamente -->
       </div>
     </div>
 
-    <!-- Conteúdo Aba 2: Nova Solicitação -->
+    <!-- ABA 2: Nova Solicitação (Wizard Interativo) -->
     <div id="tab-nova" class="tab-content" style="display: none;">
-      <div class="form-card">
-        <h2 style="font-size: 18px; font-weight: 700; margin-bottom: 6px;">Solicitar Reparo Residencial</h2>
-        <p style="font-size: 13px; color: #64748B; margin-bottom: 20px;">
-          Descreva o problema com clareza para receber propostas precisas de profissionais qualificados.
-        </p>
+      <div class="card-wrapper">
+        <h2 class="section-title">Solicitar Reparo Residencial</h2>
+        <p class="section-desc">Especifique sua demanda para receber orçamentos comparativos de profissionais verificados.</p>
 
         <form id="form-nova-solicitacao">
           <div class="form-row">
             <div class="form-group">
-              <label class="form-label" for="select-categoria">Categoria:</label>
-              <select id="select-categoria" class="form-select" required>
-                <option value="Elétrica">Elétrica</option>
-                <option value="Hidráulica">Hidráulica</option>
-                <option value="Pintura">Pintura</option>
-                <option value="Alvenaria">Alvenaria</option>
-                <option value="Climatização">Climatização</option>
+              <label class="form-label" for="select-categoria">Especialidade Necessária:</label>
+              <select id="select-categoria" class="form-select" required onchange="atualizarEstimativaPreco()">
+                <option value="Elétrica">⚡ Elétrica Residencial</option>
+                <option value="Hidráulica">💧 Hidráulica & Desentupimento</option>
+                <option value="Pintura">🎨 Pintura & Textura</option>
+                <option value="Alvenaria">🧱 Alvenaria & Reformas</option>
+                <option value="Climatização">❄️ Ar-condicionado & Climatização</option>
               </select>
             </div>
             <div class="form-group">
-              <label class="form-label" for="select-urgencia">Urgência:</label>
+              <label class="form-label" for="select-urgencia">Nível de Urgência:</label>
               <select id="select-urgencia" class="form-select" required>
                 <option value="MEDIA">Média (em até 48 horas)</option>
                 <option value="ALTA">Alta (em até 24 horas)</option>
                 <option value="EMERGENCIAL">Emergencial (imediato)</option>
-                <option value="BAIXA">Baixa (agendamento flexível)</option>
+                <option value="BAIXA">Baixa (data flexível)</option>
               </select>
             </div>
           </div>
 
-          <div class="form-group">
-            <label class="form-label" for="input-titulo">Título resumido da necessidade:</label>
-            <input type="text" id="input-titulo" class="form-input" placeholder="Ex: Vazamento no registro do banheiro principal" required>
+          <!-- Estimador Inteligente de Preço Regional -->
+          <div class="price-estimator-box" id="price-estimator">
+            <div class="estimator-icon">💡</div>
+            <div class="estimator-info">
+              <h5 id="estimator-title">Estimativa Preliminar Regional: Elétrica</h5>
+              <p id="estimator-text">Preço médio praticado em Volta Redonda: <strong>R$ 180,00 a R$ 380,00</strong> para intervenções elétricas residenciais.</p>
+            </div>
           </div>
 
           <div class="form-group">
-            <label class="form-label" for="input-descricao">Descrição detalhada do defeito ou serviço:</label>
-            <textarea id="input-descricao" class="form-textarea" rows="4" placeholder="Explique os sintomas, histórico da avaria e se há peças para reposição..." required></textarea>
+            <label class="form-label" for="input-titulo">Título Resumido da Demanda:</label>
+            <input type="text" id="input-titulo" class="form-input" placeholder="Ex: Substituição de disjuntor bipolar que desarma com chuveiro" required maxlength="120">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="input-descricao">Detalhamento Técnico do Problema:</label>
+            <textarea id="input-descricao" class="form-textarea" rows="4" placeholder="Descreva os sintomas da avaria, histórico do defeito e se você já possui as peças para reposição..." required maxlength="2000"></textarea>
           </div>
 
           <div class="form-row">
             <div class="form-group">
               <label class="form-label" for="input-cep">CEP:</label>
-              <input type="text" id="input-cep" class="form-input" placeholder="27253-000" required>
+              <input type="text" id="input-cep" class="form-input" placeholder="27253-000" required maxlength="15">
             </div>
             <div class="form-group">
-              <label class="form-label" for="input-endereco">Endereço completo com bairro:</label>
-              <input type="text" id="input-endereco" class="form-input" placeholder="Rua 16, nº 220 - Vila Santa Cecília, Volta Redonda/RJ" required>
+              <label class="form-label" for="input-endereco">Endereço com Bairro e Cidade:</label>
+              <input type="text" id="input-endereco" class="form-input" placeholder="Rua 16, nº 220 - Vila Santa Cecília, Volta Redonda/RJ" required maxlength="200">
             </div>
           </div>
 
           <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 10px;">
             <button type="button" class="btn btn-secondary" onclick="trocarAba('mural')">Cancelar</button>
-            <button type="submit" class="btn btn-primary">Publicar Solicitação</button>
+            <button type="submit" class="btn btn-primary">Publicar Chamado no Mural</button>
           </div>
         </form>
       </div>
     </div>
 
+    <!-- ABA 3: Livro-Razão Escrow (Transações Financeiras) -->
+    <div id="tab-escrow" class="tab-content" style="display: none;">
+      <div style="margin-bottom: 20px;">
+        <h2 class="section-title">Livro-Razão de Custódia (Escrow Ledger)</h2>
+        <p class="section-desc">Auditoria transacional completa de todos os valores bloqueados, repasses liquidados e estornos do sistema.</p>
+      </div>
+
+      <div class="table-container">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Data/Hora</th>
+              <th>Ordem Vinculada</th>
+              <th>Tipo de Operação</th>
+              <th>Valor (R$)</th>
+              <th>Status</th>
+              <th>Histórico de Auditoria</th>
+            </tr>
+          </thead>
+          <tbody id="transacoes-tbody">
+            <!-- Renderizado dinamicamente -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ABA 4: Carteira Digital do Prestador -->
+    <div id="tab-carteira" class="tab-content" style="display: none;">
+      <div style="margin-bottom: 20px;">
+        <h2 class="section-title">Carteira Digital do Prestador</h2>
+        <p class="section-desc">Gestão de saldos operacionais, previsibilidade de repasses em custódia e solicitação de saque PIX.</p>
+      </div>
+
+      <div class="wallet-grid">
+        <div class="wallet-card available">
+          <span class="wallet-badge">Saldo Disponível para Saque</span>
+          <div class="wallet-amount" id="wallet-available">R$ 0,00</div>
+          <p class="wallet-desc">Proveniente de serviços vistoriados e aprovados pelos clientes.</p>
+        </div>
+
+        <div class="wallet-card escrowed">
+          <span class="wallet-badge">Saldo em Custódia (Escrow)</span>
+          <div class="wallet-amount" id="wallet-escrowed">R$ 0,00</div>
+          <p class="wallet-desc">Garantido na plataforma. Será transferido para o saldo disponível após a vistoria.</p>
+        </div>
+      </div>
+
+      <div class="card-wrapper" style="margin: 0; max-width: 100%;">
+        <h3 style="font-size: 16px; font-weight: 700; margin-bottom: 12px;">Solicitar Resgate Instantâneo via PIX</h3>
+        <form id="form-saque">
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Valor a Sacar (R$):</label>
+              <input type="number" id="saque-valor" class="form-input" placeholder="Ex: 300.00" min="1" step="0.50" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Chave PIX de Destino:</label>
+              <input type="text" id="saque-pix" class="form-input" placeholder="CPF, e-mail, telefone ou chave aleatória" required>
+            </div>
+          </div>
+          <button type="submit" class="btn btn-success">Confirmar Transferência PIX</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- ABA 5: Central de Mediação & Disputas -->
+    <div id="tab-disputas" class="tab-content" style="display: none;">
+      <div style="margin-bottom: 20px;">
+        <h2 class="section-title">Central de Mediação & Arbitragem</h2>
+        <p class="section-desc">Painel de resolução de contestações presenciais com suporte e retenção cautelar do saldo.</p>
+      </div>
+
+      <div id="disputas-container" class="orders-grid">
+        <!-- Renderizado dinamicamente -->
+      </div>
+    </div>
+
   </main>
 
-  <!-- Modal Genérico -->
+  <!-- Modal Genérico Reutilizável -->
   <div class="modal-overlay" id="modal" style="display: none;">
     <div class="modal-content" id="modal-body">
-      <!-- Inserido dinamicamente -->
+      <!-- Inserido dinamicamente via JS -->
     </div>
   </div>
 

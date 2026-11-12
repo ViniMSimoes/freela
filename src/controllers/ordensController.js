@@ -573,3 +573,100 @@ exports.listarUsuarios = (req, res) => {
     res.status(500).json({ sucesso: false, mensagem: 'Erro ao listar usuários.' });
   }
 };
+
+// 11. Listar Livro-Razão de Custódia (Transações Escrow)
+exports.listarTransacoes = (req, res) => {
+  try {
+    const sql = `
+      SELECT t.*, o.titulo as ordem_titulo, o.categoria, c.nome as cliente_nome, p.nome as prestador_nome
+      FROM transacoes_custodia t
+      JOIN ordens_servico o ON t.ordem_id = o.id
+      JOIN usuarios c ON o.cliente_id = c.id
+      LEFT JOIN usuarios p ON o.prestador_id = p.id
+      ORDER BY t.id DESC
+    `;
+    const transacoes = db.prepare(sql).all();
+    res.json({ sucesso: true, dados: transacoes });
+  } catch (error) {
+    console.error('[ERRO listarTransacoes]:', error);
+    res.status(500).json({ sucesso: false, mensagem: 'Erro ao listar transações de custódia.' });
+  }
+};
+
+// 12. Solicitar Saque PIX do Saldo Disponível (Prestador)
+exports.solicitarSaque = (req, res) => {
+  try {
+    const { prestador_id, valor, chave_pix } = req.body;
+    const pId = parseInt(prestador_id, 10);
+    const valorNum = parseFloat(valor);
+
+    if (isNaN(pId) || isNaN(valorNum) || valorNum <= 0) {
+      return res.status(400).json({ sucesso: false, mensagem: 'Valor de saque ou ID inválido.' });
+    }
+
+    const prestador = db.prepare('SELECT * FROM usuarios WHERE id = ?').get(pId);
+    if (!prestador || prestador.papel !== 'PRESTADOR') {
+      return res.status(404).json({ sucesso: false, mensagem: 'Prestador não encontrado.' });
+    }
+
+    if (prestador.saldo_disponivel < valorNum) {
+      return res.status(400).json({
+        sucesso: false,
+        mensagem: `Saldo insuficiente. Disponível para saque imediato: R$ ${prestador.saldo_disponivel.toFixed(2)}`
+      });
+    }
+
+    db.prepare('UPDATE usuarios SET saldo_disponivel = saldo_disponivel - ? WHERE id = ?').run(valorNum, pId);
+
+    res.json({
+      sucesso: true,
+      mensagem: `Saque PIX de R$ ${valorNum.toFixed(2)} processado com sucesso para a chave: ${sanitizarTexto(chave_pix, 100) || 'CPF/E-mail padrão'}!`,
+      novo_saldo: prestador.saldo_disponivel - valorNum
+    });
+  } catch (error) {
+    console.error('[ERRO solicitarSaque]:', error);
+    res.status(500).json({ sucesso: false, mensagem: 'Erro ao processar saque.' });
+  }
+};
+
+// 13. Resolução e Mediação de Disputas (Arbitragem)
+exports.resolverDisputa = (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    const { decisao, justificativa } = req.body;
+
+    const ordem = db.prepare('SELECT * FROM ordens_servico WHERE id = ?').get(id);
+    if (!ordem || ordem.status !== 'EM_DISPUTA') {
+      return res.status(400).json({ sucesso: false, mensagem: 'Esta ordem não se encontra em mediação de disputa.' });
+    }
+
+    const decisaoSan = (decisao === 'REPASSE_PRESTADOR') ? 'REPASSE_PRESTADOR' : 'ESTORNO_CLIENTE';
+    const justSan = sanitizarTexto(justificativa, 255) || 'Mediação concluída pelo suporte técnico.';
+
+    db.exec('BEGIN TRANSACTION;');
+    try {
+      if (decisaoSan === 'REPASSE_PRESTADOR') {
+        db.prepare("UPDATE ordens_servico SET status = 'CONCLUIDO', atualizado_em = CURRENT_TIMESTAMP WHERE id = ?").run(id);
+        db.prepare("UPDATE usuarios SET saldo_custodia = MAX(0, saldo_custodia - ?), saldo_disponivel = saldo_disponivel + ? WHERE id = ?").run(ordem.valor_mao_obra, ordem.valor_mao_obra, ordem.prestador_id);
+        db.prepare("INSERT INTO transacoes_custodia (ordem_id, valor, tipo, status, detalhes) VALUES (?, ?, 'LIBERACAO_REPASSE', 'CONFIRMADO', ?)").run(id, ordem.valor_mao_obra, `Disputa resolvida a favor do prestador. Parecer: ${justSan}`);
+      } else {
+        db.prepare("UPDATE ordens_servico SET status = 'CANCELADO', atualizado_em = CURRENT_TIMESTAMP WHERE id = ?").run(id);
+        db.prepare("UPDATE usuarios SET saldo_custodia = MAX(0, saldo_custodia - ?) WHERE id = ?").run(ordem.valor_mao_obra, ordem.prestador_id);
+        db.prepare("INSERT INTO transacoes_custodia (ordem_id, valor, tipo, status, detalhes) VALUES (?, ?, 'ESTORNO_DISPUTA', 'CONFIRMADO', ?)").run(id, ordem.valor_total, `Disputa resolvida com estorno integral ao cliente. Parecer: ${justSan}`);
+      }
+      db.exec('COMMIT;');
+    } catch (e) {
+      db.exec('ROLLBACK;');
+      throw e;
+    }
+
+    res.json({
+      sucesso: true,
+      mensagem: `Disputa na OS #${id} resolvida com decisão '${decisaoSan}'.`,
+      status_final: (decisaoSan === 'REPASSE_PRESTADOR' ? 'CONCLUIDO' : 'CANCELADO')
+    });
+  } catch (error) {
+    console.error('[ERRO resolverDisputa]:', error);
+    res.status(500).json({ sucesso: false, mensagem: 'Erro ao arbitrar disputa.' });
+  }
+};

@@ -1,15 +1,33 @@
-// FreeLA SaaS — Frontend Controller & API Client (Hardened)
+// FreeLA SaaS — Frontend Controller & Advanced Platform Manager
 
 let state = {
   currentRole: 'CLIENTE', // 'CLIENTE' ou 'PRESTADOR'
   currentUser: { id: 1, nome: 'Maria Santos', papel: 'CLIENTE' },
   activeTab: 'mural',
   ordens: [],
+  transacoes: [],
   stats: {},
   usuarios: []
 };
 
-// Função de Sanitização para Prevenção de XSS (Cross-Site Scripting)
+// Estimativas regionais de mão de obra (Volta Redonda / Sul Fluminense)
+const ESTIMATIVAS_PRECO = {
+  'Elétrica': { min: 180, max: 380, desc: 'Instalação de disjuntores, chuveiros, tomadas e revisão de fiação.' },
+  'Hidráulica': { min: 150, max: 320, desc: 'Desentupimentos, reparo de vazamentos em canos e troca de sifões.' },
+  'Pintura': { min: 350, max: 950, desc: 'Pintura de cômodos, aplicação de massa corrida e impermeabilização.' },
+  'Alvenaria': { min: 300, max: 1200, desc: 'Assentamento de pisos, reparo em reboco, paredes e calçadas.' },
+  'Climatização': { min: 200, max: 550, desc: 'Higienização preventiva, carga de gás e instalação de splits.' }
+};
+
+const CATEGORIA_ICONS = {
+  'Elétrica': '⚡',
+  'Hidráulica': '💧',
+  'Pintura': '🎨',
+  'Alvenaria': '🧱',
+  'Climatização': '❄️'
+};
+
+// Função de Sanitização para Prevenção de XSS
 function escapeHtml(str) {
   if (str === null || str === undefined) return '';
   return String(str)
@@ -20,12 +38,14 @@ function escapeHtml(str) {
     .replace(/'/g, '&#039;');
 }
 
-// Inicialização
+// Inicialização da Aplicação
 document.addEventListener('DOMContentLoaded', async () => {
   await carregarUsuarios();
   await carregarEstatisticas();
   await carregarOrdens();
+  await carregarTransacoes();
   setupEventListeners();
+  atualizarEstimativaPreco();
 });
 
 // Carregar Usuários do Sistema
@@ -36,6 +56,7 @@ async function carregarUsuarios() {
     if (json.sucesso) {
       state.usuarios = json.dados;
       atualizarBadgeUsuario();
+      atualizarCarteiraPrestador();
     }
   } catch (err) {
     console.error('Erro ao carregar usuários:', err);
@@ -59,7 +80,7 @@ async function carregarEstatisticas() {
   }
 }
 
-// Carregar Ordens de Serviço com Parâmetros Codificados
+// Carregar Ordens de Serviço com Filtros
 async function carregarOrdens() {
   try {
     const statusFiltro = encodeURIComponent(document.getElementById('filtro-status').value);
@@ -73,32 +94,69 @@ async function carregarOrdens() {
     const json = await res.json();
     if (json.sucesso) {
       state.ordens = json.dados;
+      document.getElementById('badge-total-ordens').innerText = json.dados.length;
+      
+      const totalDisputas = json.dados.filter(o => o.status === 'EM_DISPUTA').length;
+      document.getElementById('badge-total-disputas').innerText = totalDisputas;
+
       renderizarOrdens();
+      renderizarDisputas();
     }
   } catch (err) {
     console.error('Erro ao carregar ordens:', err);
   }
 }
 
-// Renderizar Cards de Ordens com Sanitização Anti-XSS
+// Carregar Livro-Razão Escrow (Transações)
+async function carregarTransacoes() {
+  try {
+    const res = await fetch('/api/transacoes');
+    const json = await res.json();
+    if (json.sucesso) {
+      state.transacoes = json.dados;
+      document.getElementById('badge-total-transacoes').innerText = json.dados.length;
+      renderizarTransacoes();
+    }
+  } catch (err) {
+    console.error('Erro ao carregar transações:', err);
+  }
+}
+
+// Renderizar Mural de Ordens com Step Bar e Micro-interações
 function renderizarOrdens() {
   const container = document.getElementById('orders-container');
   container.innerHTML = '';
 
-  if (state.ordens.length === 0) {
+  const busca = (document.getElementById('filtro-busca').value || '').toLowerCase().trim();
+
+  const filtradas = state.ordens.filter(o => {
+    if (!busca) return true;
+    return (
+      o.titulo.toLowerCase().includes(busca) ||
+      o.descricao.toLowerCase().includes(busca) ||
+      o.cep.toLowerCase().includes(busca) ||
+      o.endereco.toLowerCase().includes(busca) ||
+      o.categoria.toLowerCase().includes(busca)
+    );
+  });
+
+  if (filtradas.length === 0) {
     container.innerHTML = `
-      <div style="grid-column: 1 / -1; padding: 40px; text-align: center; color: #64748B; background: #FFF; border: 1px solid #E2E8F0; border-radius: 8px;">
-        Nenhuma ordem de serviço encontrada com os filtros selecionados.
+      <div style="grid-column: 1 / -1; padding: 48px 20px; text-align: center; color: #64748B; background: #FFF; border: 1px dashed #CBD5E1; border-radius: 10px;">
+        <div style="font-size: 32px; margin-bottom: 8px;">🔍</div>
+        <strong style="font-size: 15px; color: #0F172A;">Nenhum chamado encontrado</strong>
+        <p style="font-size: 13px; margin-top: 4px;">Tente alterar os filtros de especialidade ou o termo de busca.</p>
       </div>
     `;
     return;
   }
 
-  state.ordens.forEach(o => {
+  filtradas.forEach(o => {
     const orderId = parseInt(o.id, 10);
     const card = document.createElement('div');
     card.className = 'order-card';
 
+    // Ações contextuais de acordo com o papel e status
     let actionButtons = '';
 
     if (state.currentRole === 'CLIENTE') {
@@ -106,15 +164,15 @@ function renderizarOrdens() {
         actionButtons = `<button class="btn btn-secondary btn-sm" onclick="abrirModalDetalhes(${orderId})">Ver Propostas (${parseInt(o.total_propostas, 10)})</button>`;
       } else if (o.status === 'AGUARDANDO_VISTORIA') {
         actionButtons = `
-          <button class="btn btn-success btn-sm" onclick="abrirModalAprovacao(${orderId})">Aprovar & Liberar</button>
-          <button class="btn btn-danger btn-sm" onclick="abrirModalDisputa(${orderId})">Disputa</button>
+          <button class="btn btn-success btn-sm" onclick="abrirModalAprovacao(${orderId})">✓ Aprovar Vistoria</button>
+          <button class="btn btn-danger btn-sm" onclick="abrirModalDisputa(${orderId})">⚠️ Abrir Disputa</button>
         `;
       } else if (o.status === 'EM_CUSTODIA' || o.status === 'A_CAMINHO' || o.status === 'EM_EXECUCAO') {
-        actionButtons = `<span style="font-size: 12px; color: #0284C7; font-weight: 600;">Em andamento</span>`;
+        actionButtons = `<span style="font-size: 12px; color: #0284C7; font-weight: 600;">⚡ Em andamento</span>`;
       } else if (o.status === 'CONCLUIDO') {
-        actionButtons = `<span style="font-size: 12px; color: #166534; font-weight: 600;">✓ Pago & Finalizado</span>`;
+        actionButtons = `<span style="font-size: 12px; color: #166534; font-weight: 600;">✓ Pago & Avaliado</span>`;
       } else if (o.status === 'EM_DISPUTA') {
-        actionButtons = `<span style="font-size: 12px; color: #DC2626; font-weight: 600;">Em mediação</span>`;
+        actionButtons = `<button class="btn btn-danger btn-sm" onclick="trocarAba('disputas')">Ver Mediação</button>`;
       }
     } else {
       // PRESTADOR
@@ -128,31 +186,51 @@ function renderizarOrdens() {
         } else if (o.status === 'EM_EXECUCAO') {
           actionButtons = `<button class="btn btn-success btn-sm" onclick="atualizarStatusOrdem(${orderId}, 'AGUARDANDO_VISTORIA')">Concluir Reparo</button>`;
         } else if (o.status === 'AGUARDANDO_VISTORIA') {
-          actionButtons = `<span style="font-size: 12px; color: #B45309; font-weight: 600;">Aguardando Vistoria</span>`;
+          actionButtons = `<span style="font-size: 12px; color: #B45309; font-weight: 600;">⏳ Aguardando Vistoria</span>`;
         }
       }
     }
 
+    // Cálculo do Step Bar (5 estágios)
+    const step = obterProgressoEstagio(o.status);
+    const stepBars = [1, 2, 3, 4, 5].map(s => {
+      const activeClass = s <= step ? 'active' : '';
+      return `<div class="step-segment ${activeClass}"></div>`;
+    }).join('');
+
+    const icon = CATEGORIA_ICONS[o.categoria] || '🔧';
     const valorExibicao = o.valor_total > 0 
       ? `R$ ${Number(o.valor_total).toFixed(2)}` 
-      : (o.total_propostas > 0 ? `${parseInt(o.total_propostas, 10)} proposta(s)` : 'Aguardando orçamento');
+      : (o.total_propostas > 0 ? `${parseInt(o.total_propostas, 10)} proposta(s)` : 'Aguardando propostas');
 
     card.innerHTML = `
       <div>
-        <div class="order-header">
-          <span class="order-category">${escapeHtml(o.categoria)}</span>
+        <div class="order-top">
+          <span class="category-tag">${icon} ${escapeHtml(o.categoria)}</span>
           <span class="status-badge status-${escapeHtml(o.status)}">${formatarStatus(o.status)}</span>
         </div>
-        <h4 class="order-title">#${orderId} - ${escapeHtml(o.titulo)}</h4>
+        <h3 class="order-title">#${orderId} - ${escapeHtml(o.titulo)}</h3>
         <p class="order-desc">${escapeHtml(o.descricao)}</p>
-        <div class="order-meta">
-          <div><strong>Cliente:</strong> ${escapeHtml(o.cliente_nome)} (${escapeHtml(o.cep)})</div>
-          ${o.prestador_nome ? `<div><strong>Prestador:</strong> ${escapeHtml(o.prestador_nome)}</div>` : ''}
-          <div><strong>Urgência:</strong> ${escapeHtml(o.urgencia)}</div>
+
+        <!-- Barra de Progresso Visual do Ciclo de Vida -->
+        <div class="order-step-bar" title="Progresso do chamado">${stepBars}</div>
+
+        <div class="order-details-meta">
+          <div class="meta-row">
+            <span><strong>Cliente:</strong> ${escapeHtml(o.cliente_nome)}</span>
+            <span><strong>Urgência:</strong> ${escapeHtml(o.urgencia)}</span>
+          </div>
+          <div class="meta-row">
+            <span>📍 ${escapeHtml(o.endereco)} (${escapeHtml(o.cep)})</span>
+          </div>
+          ${o.prestador_nome ? `<div class="meta-row" style="margin-top:2px;"><span>🛠️ <strong>Prestador:</strong> ${escapeHtml(o.prestador_nome)}</span></div>` : ''}
         </div>
       </div>
-      <div class="order-footer">
-        <div class="order-price">${valorExibicao}</div>
+      <div class="order-bottom">
+        <div class="order-price-box">
+          <span class="order-price-label">${o.valor_total > 0 ? 'Retido em Custódia' : 'Estimativa'}</span>
+          <span class="order-price-val">${valorExibicao}</span>
+        </div>
         <div style="display: flex; gap: 6px;">
           ${actionButtons}
         </div>
@@ -163,24 +241,170 @@ function renderizarOrdens() {
   });
 }
 
-function formatarStatus(status) {
-  const mapa = {
-    'PENDENTE': 'Pendente',
-    'PROPOSTA_RECEBIDA': 'Com Propostas',
-    'EM_CUSTODIA': 'Em Custódia',
-    'A_CAMINHO': 'A Caminho',
-    'EM_EXECUCAO': 'Em Execução',
-    'AGUARDANDO_VISTORIA': 'Vistoria Pendente',
-    'CONCLUIDO': 'Concluído',
-    'EM_DISPUTA': 'Em Disputa'
-  };
-  return mapa[status] || escapeHtml(status);
+function obterProgressoEstagio(status) {
+  switch (status) {
+    case 'PENDENTE': return 1;
+    case 'PROPOSTA_RECEBIDA': return 2;
+    case 'EM_CUSTODIA': return 3;
+    case 'A_CAMINHO':
+    case 'EM_EXECUCAO': return 4;
+    case 'AGUARDANDO_VISTORIA':
+    case 'CONCLUIDO': return 5;
+    default: return 1;
+  }
+}
+
+// Renderizar Livro-Razão Escrow (Transações)
+function renderizarTransacoes() {
+  const tbody = document.getElementById('transacoes-tbody');
+  tbody.innerHTML = '';
+
+  if (state.transacoes.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:30px; color:#64748B;">Nenhuma transação registrada no livro-razão.</td></tr>`;
+    return;
+  }
+
+  state.transacoes.forEach(t => {
+    const tr = document.createElement('tr');
+    
+    let tipoBadge = '';
+    let valorCor = '#0F172A';
+    if (t.tipo === 'BLOQUEIO_ESCROW') {
+      tipoBadge = `<span class="status-badge" style="background:#FEF3C7; color:#92400E;">🔒 Retenção Escrow</span>`;
+      valorCor = '#B45309';
+    } else if (t.tipo === 'LIBERACAO_REPASSE') {
+      tipoBadge = `<span class="status-badge" style="background:#DCFCE7; color:#166534;">💸 Repasse Liberado</span>`;
+      valorCor = '#166534';
+    } else {
+      tipoBadge = `<span class="status-badge" style="background:#FEE2E2; color:#991B1B;">⚠️ Estorno / Disputa</span>`;
+      valorCor = '#991B1B';
+    }
+
+    tr.innerHTML = `
+      <td><strong>#TRX-${t.id}</strong></td>
+      <td><span style="font-size:12px; color:#64748B;">${escapeHtml(t.criado_em)}</span></td>
+      <td>OS #${t.ordem_id} - ${escapeHtml(t.ordem_titulo || 'Serviço')}</td>
+      <td>${tipoBadge}</td>
+      <td><strong style="color: ${valorCor}; font-size:14px;">R$ ${Number(t.valor).toFixed(2)}</strong></td>
+      <td><span class="status-badge" style="background:#F1F5F9; color:#334155;">${escapeHtml(t.status)}</span></td>
+      <td style="font-size: 12px; color: #475569;">${escapeHtml(t.detalhes)}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+// Renderizar Carteira Digital do Prestador
+function atualizarCarteiraPrestador() {
+  const prestador = state.usuarios.find(u => u.papel === 'PRESTADOR') || { saldo_disponivel: 0, saldo_custodia: 0 };
+  document.getElementById('wallet-available').innerText = `R$ ${Number(prestador.saldo_disponivel).toFixed(2)}`;
+  document.getElementById('wallet-escrowed').innerText = `R$ ${Number(prestador.saldo_custodia).toFixed(2)}`;
+}
+
+// Renderizar Central de Mediação & Disputas
+function renderizarDisputas() {
+  const container = document.getElementById('disputas-container');
+  container.innerHTML = '';
+
+  const disputas = state.ordens.filter(o => o.status === 'EM_DISPUTA');
+
+  if (disputas.length === 0) {
+    container.innerHTML = `
+      <div style="grid-column: 1 / -1; padding: 40px; text-align: center; color: #166534; background: #F0FDF4; border: 1px solid #BBF7D0; border-radius: 10px;">
+        <div style="font-size: 28px; margin-bottom: 6px;">🛡️</div>
+        <strong>Nenhuma disputa ativa no momento!</strong>
+        <p style="font-size: 13px; color: #475569; margin-top: 4px;">Todos os serviços contratados estão transcorrendo em conformidade com as partes.</p>
+      </div>
+    `;
+    return;
+  }
+
+  disputas.forEach(d => {
+    const card = document.createElement('div');
+    card.className = 'order-card';
+    card.style.borderLeft = '4px solid #DC2626';
+
+    card.innerHTML = `
+      <div>
+        <div class="order-top">
+          <span class="category-tag">OS #${d.id}</span>
+          <span class="status-badge status-EM_DISPUTA">Em Mediação</span>
+        </div>
+        <h3 class="order-title">${escapeHtml(d.titulo)}</h3>
+        <p class="order-desc">${escapeHtml(d.descricao)}</p>
+        <div class="order-details-meta">
+          <div><strong>Cliente Reclamante:</strong> ${escapeHtml(d.cliente_nome)}</div>
+          <div><strong>Prestador Alocado:</strong> ${escapeHtml(d.prestador_nome || 'N/A')}</div>
+          <div><strong>Valor Retido sob Custódia:</strong> R$ ${Number(d.valor_total).toFixed(2)}</div>
+        </div>
+      </div>
+      <div class="order-bottom" style="flex-direction: column; align-items: stretch; gap: 8px;">
+        <span style="font-size: 12px; font-weight:700; color:#0F172A;">Painel de Conciliação / Arbitragem:</span>
+        <div style="display: flex; gap: 6px;">
+          <button class="btn btn-success btn-sm" style="flex:1;" onclick="arbitrarDisputa(${d.id}, 'REPASSE_PRESTADOR')">Liberar Repasse ao Prestador</button>
+          <button class="btn btn-danger btn-sm" style="flex:1;" onclick="arbitrarDisputa(${d.id}, 'ESTORNO_CLIENTE')">Estornar Integral ao Cliente</button>
+        </div>
+      </div>
+    `;
+    container.appendChild(card);
+  });
+}
+
+function arbitrarDisputa(ordemId, decisao) {
+  const justificativa = prompt(`Informe o parecer técnico da mediação para a decisão '${decisao}':`, 'Conformidade técnica verificada pelo suporte.');
+  if (!justificativa) return;
+
+  fetch(`/api/disputas/${ordemId}/resolver`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ decisao, justificativa })
+  })
+  .then(res => res.json())
+  .then(json => {
+    if (json.sucesso) {
+      alert(`MEDIAÇÃO CONCLUÍDA!\n\n${json.mensagem}`);
+      carregarEstatisticas();
+      carregarOrdens();
+      carregarTransacoes();
+      carregarUsuarios();
+    } else {
+      alert('Erro: ' + json.mensagem);
+    }
+  })
+  .catch(err => alert('Erro: ' + err.message));
+}
+
+// Alternância de Abas
+function trocarAba(aba) {
+  state.activeTab = aba;
+  document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c => c.style.display = 'none');
+
+  const btnAtivo = document.getElementById(`tab-btn-${aba}`);
+  const containerAtivo = document.getElementById(`tab-${aba}`);
+
+  if (btnAtivo) btnAtivo.classList.add('active');
+  if (containerAtivo) containerAtivo.style.display = 'block';
+
+  if (aba === 'mural') carregarOrdens();
+  if (aba === 'escrow') carregarTransacoes();
+  if (aba === 'carteira') { carregarUsuarios(); atualizarCarteiraPrestador(); }
+  if (aba === 'disputas') carregarOrdens();
+}
+
+// Atualizar Estimador de Preço
+function atualizarEstimativaPreco() {
+  const cat = document.getElementById('select-categoria').value;
+  const info = ESTIMATIVAS_PRECO[cat] || { min: 150, max: 400, desc: 'Serviços gerais de reparo domiciliar.' };
+  
+  document.getElementById('estimator-title').innerText = `Estimativa Regional: ${cat}`;
+  document.getElementById('estimator-text').innerHTML = `Preço médio praticado: <strong>R$ ${info.min},00 a R$ ${info.max},00</strong>. ${info.desc}`;
 }
 
 // Configurar Event Listeners
 function setupEventListeners() {
   document.getElementById('filtro-status').addEventListener('change', carregarOrdens);
   document.getElementById('filtro-categoria').addEventListener('change', carregarOrdens);
+  document.getElementById('filtro-busca').addEventListener('input', renderizarOrdens);
 
   // Alternar papel Cliente / Prestador
   document.getElementById('btn-switch-role').addEventListener('click', () => {
@@ -226,7 +450,7 @@ function setupEventListeners() {
       });
       const json = await res.json();
       if (json.sucesso) {
-        alert('Solicitação criada com sucesso! Os prestadores locais já podem enviar propostas.');
+        alert('Chamado criado com sucesso! Notificações enviadas aos prestadores da região.');
         document.getElementById('form-nova-solicitacao').reset();
         trocarAba('mural');
         await carregarEstatisticas();
@@ -238,29 +462,70 @@ function setupEventListeners() {
       alert('Erro na comunicação com a API: ' + err.message);
     }
   });
+
+  // Formulário de Saque PIX
+  document.getElementById('form-saque').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const prestador = state.usuarios.find(u => u.papel === 'PRESTADOR');
+    if (!prestador) return alert('Nenhum prestador encontrado.');
+
+    const valor = parseFloat(document.getElementById('saque-valor').value);
+    const chave_pix = document.getElementById('saque-pix').value.trim();
+
+    try {
+      const res = await fetch('/api/prestador/saque', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          prestador_id: prestador.id,
+          valor,
+          chave_pix
+        })
+      });
+      const json = await res.json();
+      if (json.sucesso) {
+        alert(`RESGATE PIX CONCLUÍDO!\n\n${json.mensagem}`);
+        document.getElementById('form-saque').reset();
+        await carregarUsuarios();
+        atualizarCarteiraPrestador();
+        await carregarEstatisticas();
+      } else {
+        alert('Erro no saque: ' + json.mensagem);
+      }
+    } catch (err) {
+      alert('Erro: ' + err.message);
+    }
+  });
 }
 
 function atualizarBadgeUsuario() {
-  const badge = document.getElementById('user-badge-info');
-  badge.innerText = `${state.currentUser.nome} (${state.currentRole})`;
+  const avatar = document.getElementById('user-avatar');
+  const name = document.getElementById('user-name');
+  const roleBadge = document.getElementById('user-role-badge');
+
+  avatar.innerText = state.currentUser.nome.charAt(0);
+  name.innerText = state.currentUser.nome;
+  roleBadge.innerText = state.currentRole;
+  roleBadge.className = `role-pill role-${state.currentRole}`;
+
   document.getElementById('btn-switch-role').innerText = state.currentRole === 'CLIENTE' 
-    ? 'Alternar para Prestador (Carlos)' 
-    : 'Alternar para Cliente (Maria)';
+    ? '🔄 Mudar para Prestador' 
+    : '🔄 Mudar para Cliente';
 }
 
-function trocarAba(aba) {
-  state.activeTab = aba;
-  document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-  document.querySelectorAll('.tab-content').forEach(c => c.style.display = 'none');
-
-  if (aba === 'mural') {
-    document.getElementById('tab-btn-mural').classList.add('active');
-    document.getElementById('tab-mural').style.display = 'block';
-    carregarOrdens();
-  } else if (aba === 'nova') {
-    document.getElementById('tab-btn-nova').classList.add('active');
-    document.getElementById('tab-nova').style.display = 'block';
-  }
+function formatarStatus(status) {
+  const mapa = {
+    'PENDENTE': 'Pendente',
+    'PROPOSTA_RECEBIDA': 'Com Propostas',
+    'EM_CUSTODIA': 'Em Custódia',
+    'A_CAMINHO': 'A Caminho',
+    'EM_EXECUCAO': 'Em Execução',
+    'AGUARDANDO_VISTORIA': 'Vistoria Pendente',
+    'CONCLUIDO': 'Concluído',
+    'EM_DISPUTA': 'Em Disputa',
+    'CANCELADO': 'Cancelado'
+  };
+  return mapa[status] || escapeHtml(status);
 }
 
 // Modal de Detalhes e Checkout Sanitizado
@@ -277,21 +542,21 @@ async function abrirModalDetalhes(ordemId) {
 
     let propostasHtml = '';
     if (o.propostas.length === 0) {
-      propostasHtml = '<p style="color: #64748B;">Nenhum orçamento enviado até o momento.</p>';
+      propostasHtml = '<div style="padding:16px; background:#F8FAFC; border:1px dashed #CBD5E1; border-radius:6px; text-align:center; color:#64748B;">Nenhum orçamento enviado até o momento.</div>';
     } else {
       propostasHtml = o.propostas.map(p => {
         const propId = parseInt(p.id, 10);
         const valorProp = Number(p.valor);
         return `
-          <div style="border: 1px solid #E2E8F0; padding: 12px; border-radius: 6px; margin-bottom: 8px; background: #F8FAFC;">
+          <div style="border: 1px solid #E2E8F0; padding: 14px; border-radius: 8px; margin-bottom: 10px; background: #F8FAFC;">
             <div style="display: flex; justify-content: space-between; align-items: center;">
-              <strong>${escapeHtml(p.prestador_nome)} (★ ${Number(p.prestador_reputacao).toFixed(1)})</strong>
-              <span style="font-weight: 700; color: #0F172A;">R$ ${valorProp.toFixed(2)}</span>
+              <strong>${escapeHtml(p.prestador_nome)} <span style="color:#F59E0B;">(★ ${Number(p.prestador_reputacao).toFixed(1)})</span></strong>
+              <span style="font-weight: 800; font-size: 16px; color: #0F172A;">R$ ${valorProp.toFixed(2)}</span>
             </div>
-            <p style="font-size: 12px; color: #475569; margin: 4px 0;">Prazo: ${escapeHtml(p.prazo_estimado)}</p>
-            <p style="font-size: 12px; color: #334155;">"${escapeHtml(p.mensagem)}"</p>
-            <button class="btn btn-primary btn-sm" style="margin-top: 8px;" onclick="confirmarCheckout(${safeId}, ${propId}, ${valorProp})">
-              Contratar com Custódia Protegida (Escrow)
+            <p style="font-size: 12px; color: #475569; margin: 4px 0;"><strong>Estimativa de Prazo:</strong> ${escapeHtml(p.prazo_estimado)}</p>
+            <p style="font-size: 12.5px; color: #334155; margin-bottom: 8px;">"${escapeHtml(p.mensagem)}"</p>
+            <button class="btn btn-primary btn-sm" onclick="confirmarCheckout(${safeId}, ${propId}, ${valorProp})">
+              🔒 Contratar com Custódia Protegida (Escrow)
             </button>
           </div>
         `;
@@ -300,12 +565,14 @@ async function abrirModalDetalhes(ordemId) {
 
     modalBody.innerHTML = `
       <div class="modal-header">
-        <h3>Ordem de Serviço #${safeId} - ${escapeHtml(o.titulo)}</h3>
-        <button onclick="fecharModal()" style="border:none; background:none; font-size:18px; cursor:pointer;">&times;</button>
+        <h3>OS #${safeId} — ${escapeHtml(o.titulo)}</h3>
+        <button class="close-btn" onclick="fecharModal()">&times;</button>
       </div>
-      <p style="margin-bottom: 12px;"><strong>Descrição:</strong> ${escapeHtml(o.descricao)}</p>
-      <p style="margin-bottom: 16px;"><strong>Endereço:</strong> ${escapeHtml(o.endereco)} (${escapeHtml(o.cep)})</p>
-      <h4 style="font-size: 14px; margin-bottom: 8px;">Propostas Recebidas:</h4>
+      <div style="margin-bottom: 16px;">
+        <p style="font-size: 13px; color: #334155; margin-bottom: 8px;"><strong>Descrição:</strong> ${escapeHtml(o.descricao)}</p>
+        <p style="font-size: 12.5px; color: #64748B;">📍 <strong>Local:</strong> ${escapeHtml(o.endereco)} (${escapeHtml(o.cep)})</p>
+      </div>
+      <h4 style="font-size: 14px; font-weight: 700; margin-bottom: 10px;">Orçamentos Recebidos:</h4>
       ${propostasHtml}
     `;
 
@@ -315,11 +582,11 @@ async function abrirModalDetalhes(ordemId) {
   }
 }
 
-// Confirmar Checkout com Custódia (Escrow)
+// Confirmar Checkout com Custódia
 async function confirmarCheckout(ordemId, propostaId, valorMaoObra) {
   const safeOrderId = parseInt(ordemId, 10);
   const safePropId = parseInt(propostaId, 10);
-  const cupom = prompt('Deseja aplicar um cupom de desconto na taxa? Digite FREELA10 para 50% off na intermediação ou deixe em branco:', 'FREELA10');
+  const cupom = prompt('Deseja aplicar um cupom de desconto na taxa? Digite FREELA10 para 50% de abatimento ou confirme em branco:', 'FREELA10');
 
   try {
     const res = await fetch(`/api/ordens/${safeOrderId}/checkout`, {
@@ -333,10 +600,11 @@ async function confirmarCheckout(ordemId, propostaId, valorMaoObra) {
     });
     const json = await res.json();
     if (json.sucesso) {
-      alert(`PAGAMENTO EM CUSTÓDIA CONFIRMADO!\n\nValor Mão de Obra: R$ ${json.dados.valor_mao_obra.toFixed(2)}\nTaxa Intermediação: R$ ${json.dados.taxa_plataforma.toFixed(2)}\nTotal Retido no Escrow: R$ ${json.dados.valor_total.toFixed(2)}\n\nO valor está bloqueado com segurança e só será repassado ao prestador após sua vistoria e aprovação final.`);
+      alert(`PAGAMENTO RETIDO EM CUSTÓDIA COM SUCESSO!\n\nValor Mão de Obra: R$ ${json.dados.valor_mao_obra.toFixed(2)}\nTaxa Intermediação: R$ ${json.dados.taxa_plataforma.toFixed(2)}\nTotal Bloqueado no Escrow: R$ ${json.dados.valor_total.toFixed(2)}\n\nO prestador já foi notificado para iniciar o reparo. O valor só será repassado após a sua aprovação presencial.`);
       fecharModal();
       await carregarEstatisticas();
       await carregarOrdens();
+      await carregarTransacoes();
     } else {
       alert('Erro no checkout: ' + json.mensagem);
     }
@@ -354,7 +622,7 @@ function abrirModalProposta(ordemId) {
   modalBody.innerHTML = `
     <div class="modal-header">
       <h3>Enviar Proposta de Orçamento (OS #${safeId})</h3>
-      <button onclick="fecharModal()" style="border:none; background:none; font-size:18px; cursor:pointer;">&times;</button>
+      <button class="close-btn" onclick="fecharModal()">&times;</button>
     </div>
     <div class="form-group">
       <label class="form-label">Valor da Mão de Obra (R$):</label>
@@ -365,12 +633,12 @@ function abrirModalProposta(ordemId) {
       <input type="text" id="prop-prazo" class="form-input" placeholder="Ex: Amanhã às 14h (2 horas de trabalho)" maxlength="100">
     </div>
     <div class="form-group">
-      <label class="form-label">Mensagem técnica explicativa:</label>
-      <textarea id="prop-msg" class="form-textarea" rows="3" placeholder="Explique os materiais necessários ou sua experiência na área..." maxlength="1000"></textarea>
+      <label class="form-label">Mensagem explicativa para o cliente:</label>
+      <textarea id="prop-msg" class="form-textarea" rows="3" placeholder="Explique os materiais necessários, garantia oferecida ou sua experiência..." maxlength="1000"></textarea>
     </div>
-    <div class="modal-footer">
+    <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px;">
       <button class="btn btn-secondary" onclick="fecharModal()">Cancelar</button>
-      <button class="btn btn-primary" onclick="submeterProposta(${safeId})">Enviar Proposta</button>
+      <button class="btn btn-primary" onclick="submeterProposta(${safeId})">Enviar Orçamento</button>
     </div>
   `;
 
@@ -383,7 +651,7 @@ async function submeterProposta(ordemId) {
   const prazo_estimado = document.getElementById('prop-prazo').value.trim();
   const mensagem = document.getElementById('prop-msg').value.trim();
 
-  if (isNaN(valor) || valor <= 0) return alert('Informe um valor de mão de obra válido superior a zero.');
+  if (isNaN(valor) || valor <= 0) return alert('Informe um valor de mão de obra válido.');
   if (!prazo_estimado) return alert('Informe a estimativa de prazo.');
 
   try {
@@ -399,7 +667,7 @@ async function submeterProposta(ordemId) {
     });
     const json = await res.json();
     if (json.sucesso) {
-      alert('Proposta enviada ao cliente com sucesso!');
+      alert('Orçamento enviado ao cliente com sucesso!');
       fecharModal();
       await carregarOrdens();
     } else {
@@ -431,7 +699,7 @@ async function atualizarStatusOrdem(ordemId, novoStatus) {
   }
 }
 
-// Modal de Vistoria e Aprovação Final (Liberação do Escrow)
+// Modal de Vistoria e Aprovação Final
 function abrirModalAprovacao(ordemId) {
   const safeId = parseInt(ordemId, 10);
   const modal = document.getElementById('modal');
@@ -439,32 +707,32 @@ function abrirModalAprovacao(ordemId) {
 
   modalBody.innerHTML = `
     <div class="modal-header">
-      <h3>Vistoria e Liberação de Repasse (OS #${safeId})</h3>
-      <button onclick="fecharModal()" style="border:none; background:none; font-size:18px; cursor:pointer;">&times;</button>
+      <h3>Vistoria Presencial & Liberação de Pagamento (OS #${safeId})</h3>
+      <button class="close-btn" onclick="fecharModal()">&times;</button>
     </div>
-    <div class="escrow-banner" style="margin-bottom: 16px;">
+    <div class="escrow-banner" style="margin-bottom: 16px; padding: 12px 14px;">
       <div class="escrow-banner-text">
-        <strong>Liberação Financeira Irreversível</strong>
-        <p>Ao aprovar a conclusão do reparo, o valor bloqueado na conta de custódia será imediatamente transferido para a carteira do prestador.</p>
+        <strong style="color:#166534;">Liquidação Irreversível de Custódia</strong>
+        <p>Ao aprovar a vistoria, você atesta que o conserto residencial foi concluído com qualidade e autoriza a transferência bancária imediata ao profissional.</p>
       </div>
     </div>
     <div class="form-group">
-      <label class="form-label">Avaliação do Prestador (1 a 5 estrelas):</label>
+      <label class="form-label">Avaliação de Satisfação (1 a 5 estrelas):</label>
       <select id="aprov-nota" class="form-select">
-        <option value="5">★★★★★ 5 Estrelas (Excelente)</option>
+        <option value="5">★★★★★ 5 Estrelas (Excelente / Impecável)</option>
         <option value="4">★★★★☆ 4 Estrelas (Muito Bom)</option>
         <option value="3">★★★☆☆ 3 Estrelas (Satisfatório)</option>
-        <option value="2">★★☆☆☆ 2 Estrelas (Abaixo do esperado)</option>
-        <option value="1">★☆☆☆☆ 1 Estrela (Ruim)</option>
+        <option value="2">★★☆☆☆ 2 Estrelas (Abaixo do Esperado)</option>
+        <option value="1">★☆☆☆☆ 1 Estrela (Insatisfatório)</option>
       </select>
     </div>
     <div class="form-group">
-      <label class="form-label">Comentário sobre a execução do reparo:</label>
-      <textarea id="aprov-comentario" class="form-textarea" rows="3" placeholder="Descreva a qualidade do reparo, pontualidade e limpeza..." maxlength="500"></textarea>
+      <label class="form-label">Depoimento sobre a Qualidade e Pontualidade:</label>
+      <textarea id="aprov-comentario" class="form-textarea" rows="3" placeholder="Comente sobre o acabamento, cordialidade e limpeza..." maxlength="500"></textarea>
     </div>
-    <div class="modal-footer">
+    <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px;">
       <button class="btn btn-secondary" onclick="fecharModal()">Cancelar</button>
-      <button class="btn btn-success" onclick="submeterAprovacao(${safeId})">Aprovar Conclusão & Liberar Dinheiro</button>
+      <button class="btn btn-success" onclick="submeterAprovacao(${safeId})">✓ Aprovar e Liberar Repasse</button>
     </div>
   `;
 
@@ -488,10 +756,13 @@ async function submeterAprovacao(ordemId) {
     });
     const json = await res.json();
     if (json.sucesso) {
-      alert(`SUCESSO!\n\n${json.mensagem}\nValor repassado: R$ ${Number(json.valor_liberado).toFixed(2)}`);
+      alert(`VISTORIA HOMOLOGADA!\n\n${json.mensagem}\nValor repassado: R$ ${Number(json.valor_liberado).toFixed(2)}`);
       fecharModal();
       await carregarEstatisticas();
       await carregarOrdens();
+      await carregarTransacoes();
+      await carregarUsuarios();
+      atualizarCarteiraPrestador();
     } else {
       alert('Erro: ' + json.mensagem);
     }
@@ -503,7 +774,7 @@ async function submeterAprovacao(ordemId) {
 // Modal de Abertura de Disputa
 function abrirModalDisputa(ordemId) {
   const safeId = parseInt(ordemId, 10);
-  const motivo = prompt('Por favor, descreva sucintamente a inconformidade identificada no reparo para acionar a mediação:');
+  const motivo = prompt('Por favor, descreva detalhadamente a inconformidade identificada no reparo para acionar a mediação cautelar:');
   if (!motivo) return;
 
   fetch(`/api/ordens/${safeId}/disputa`, {
@@ -514,8 +785,9 @@ function abrirModalDisputa(ordemId) {
   .then(res => res.json())
   .then(json => {
     if (json.sucesso) {
-      alert(json.mensagem);
+      alert(`DISPUTA INSTAURADA!\n\n${json.mensagem}\nO chamado foi direcionado para a aba "Mediação & Disputas".`);
       carregarOrdens();
+      carregarTransacoes();
     } else {
       alert('Erro: ' + json.mensagem);
     }
