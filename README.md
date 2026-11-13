@@ -197,18 +197,16 @@ freela/
 - [Diagrama de Classes de Domínio](docs/img/diagrama_classes.png)
 - [Diagrama BPMN 2.0 do Processo de Negócio](docs/img/diagrama_bpmn.png)
 
-## Equipe e licença
+## Equipe
 
-| Integrante | Papel no projeto | GitHub |
-|---|---|---|
-| Vinicius Marcello Simoes | Engenharia de Software / Arquitetura & Backend | [@ViniMSimoes](https://github.com/ViniMSimoes) |
-| Kaique | Modelagem de Processos & Regras de Negócio (BPMN) | [@kaique](https://github.com) |
-| Caio | Engenharia de Requisitos & Casos de Uso | [@caio](https://github.com) |
-| Yago | Modelagem Relacional & Banco de Dados | [@yago](https://github.com) |
-| Lucas Augusto | Frontend & Experiência do Usuário (UI/UX) | [@lucasaugusto](https://github.com) |
-| Lucas Gabriel | Qualidade de Software, Testes & Documentação | [@lucasgabriel](https://github.com) |
+- Vinicius Marcello Simoes
+- Kaique
+- Caio
+- Yago
+- Lucas Augusto
+- Lucas Gabriel
 
-Licença: [MIT](LICENSE)
+## Licença [MIT](LICENSE)
 
 Projeto desenvolvido na disciplina **Práticas Extensionistas Integradoras III — Engenharia de Software**, Centro Universitário de Barra Mansa (UBM), 2026.
 Orientação: Profa. Ma. Laila Alves Santos.
