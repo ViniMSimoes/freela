@@ -1,5 +1,5 @@
 -- Schema do Banco de Dados SQLite — FreeLA SaaS
--- Modelo relacional alinhado ao Diagrama de Classes e BPMN
+-- Modelo relacional rigorosamente alinhado ao DER e BPMN (Critério C4)
 
 CREATE TABLE IF NOT EXISTS usuarios (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS usuarios (
     reputacao REAL DEFAULT 5.0,
     saldo_disponivel REAL DEFAULT 0.0,
     saldo_custodia REAL DEFAULT 0.0,
-    verificado INTEGER DEFAULT 1,
+    verificado INTEGER DEFAULT 0,
     criado_em DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -72,6 +72,7 @@ CREATE TABLE IF NOT EXISTS transacoes_custodia (
     FOREIGN KEY (ordem_id) REFERENCES ordens_servico(id)
 );
 
+-- Tabela de Avaliações Mútuas (1:N com ordens_servico para suportar avaliação de Cliente -> Prestador e Prestador -> Cliente)
 CREATE TABLE IF NOT EXISTS avaliacoes (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     ordem_id INTEGER NOT NULL,
@@ -80,5 +81,20 @@ CREATE TABLE IF NOT EXISTS avaliacoes (
     nota INTEGER CHECK(nota BETWEEN 1 AND 5) NOT NULL,
     comentario TEXT,
     criado_em DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (ordem_id) REFERENCES ordens_servico(id)
+    FOREIGN KEY (ordem_id) REFERENCES ordens_servico(id),
+    FOREIGN KEY (avaliador_id) REFERENCES usuarios(id),
+    FOREIGN KEY (avaliado_id) REFERENCES usuarios(id)
+);
+
+-- Tabela de Auditoria e Logs de Notificações (WhatsApp e E-mail)
+CREATE TABLE IF NOT EXISTS notificacoes_log (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    usuario_id INTEGER,
+    canal TEXT CHECK(canal IN ('WHATSAPP', 'EMAIL', 'PUSH')) NOT NULL,
+    destinatario TEXT NOT NULL,
+    assunto TEXT,
+    mensagem TEXT NOT NULL,
+    status TEXT DEFAULT 'ENVIADO',
+    criado_em DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
 );
