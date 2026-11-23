@@ -1,4 +1,6 @@
 const db = require('../database/connection');
+const escrowService = require('../services/escrowService');
+const notificationService = require('../services/notificationService');
 
 // Whitelists para validação estrita (OWASP Input Validation)
 const CATEGORIAS_VALIDAS = ['Elétrica', 'Hidráulica', 'Pintura', 'Alvenaria', 'Climatização'];
@@ -270,101 +272,21 @@ exports.checkoutCustodia = (req, res) => {
       return res.status(400).json({ sucesso: false, mensagem: 'ID de ordem inválido.' });
     }
 
-    const ordem = db.prepare('SELECT * FROM ordens_servico WHERE id = ?').get(id);
-    if (!ordem) {
-      return res.status(404).json({ sucesso: false, mensagem: 'Ordem de serviço não encontrada.' });
-    }
-
-    // Prevenção de pagamento duplicado / Double-spending
-    if (ordem.status !== 'PENDENTE' && ordem.status !== 'PROPOSTA_RECEBIDA') {
-      return res.status(400).json({
-        sucesso: false,
-        mensagem: `Operação recusada: Esta ordem já possui pagamento processado ou status '${ordem.status}'.`
-      });
-    }
-
-    let proposta;
-    if (proposta_id) {
-      const pId = parseInt(proposta_id, 10);
-      proposta = db.prepare('SELECT * FROM propostas WHERE id = ? AND ordem_id = ?').get(pId, id);
-    } else {
-      proposta = db.prepare('SELECT * FROM propostas WHERE ordem_id = ? ORDER BY id DESC LIMIT 1').get(id);
-    }
-
-    if (!proposta) {
-      return res.status(400).json({ sucesso: false, mensagem: 'Nenhuma proposta válida encontrada para contratação.' });
-    }
-
-    const valorMaoObra = parseFloat(proposta.valor);
-    if (isNaN(valorMaoObra) || valorMaoObra <= 0) {
-      return res.status(400).json({ sucesso: false, mensagem: 'Valor de mão de obra inválido.' });
-    }
-
-    let taxaPlataforma = Math.round(valorMaoObra * 0.08 * 100) / 100;
-    if (taxaPlataforma < 15.0) taxaPlataforma = 15.0;
-
-    const cupomSan = sanitizarTexto(cupom, 20).toUpperCase();
-    if (cupomSan === 'FREELA10') {
-      taxaPlataforma = Math.round(taxaPlataforma * 0.5 * 100) / 100; // 50% de desconto na taxa
-    }
-
-    const valorTotal = Math.round((valorMaoObra + taxaPlataforma) * 100) / 100;
-    const metodoSan = (metodo_pagamento === 'CARTAO_CREDITO') ? 'CARTAO_CREDITO' : 'PIX';
-
-    // Transação Atômica: garante que ou tudo executa ou nada é gravado
-    db.exec('BEGIN TRANSACTION;');
-    try {
-      // 1. Atualiza propostas
-      db.prepare(`UPDATE propostas SET status = 'ACEITA' WHERE id = ?`).run(proposta.id);
-      db.prepare(`UPDATE propostas SET status = 'RECUSADA' WHERE ordem_id = ? AND id != ?`).run(id, proposta.id);
-
-      // 2. Atualiza ordem para EM_CUSTODIA
-      db.prepare(`
-        UPDATE ordens_servico 
-        SET prestador_id = ?,
-            valor_mao_obra = ?,
-            taxa_plataforma = ?,
-            valor_total = ?,
-            metodo_pagamento = ?,
-            status = 'EM_CUSTODIA',
-            atualizado_em = CURRENT_TIMESTAMP
-        WHERE id = ?
-      `).run(proposta.prestador_id, valorMaoObra, taxaPlataforma, valorTotal, metodoSan, id);
-
-      // 3. Registra transação de retenção sob custódia
-      db.prepare(`
-        INSERT INTO transacoes_custodia (ordem_id, valor, tipo, status, detalhes)
-        VALUES (?, ?, 'BLOQUEIO_ESCROW', 'CONFIRMADO', ?)
-      `).run(id, valorTotal, `Pagamento recebido via ${metodoSan}. Saldo retido em conta escrow protegida.`);
-
-      // 4. Bloqueia valor na custódia do prestador
-      db.prepare(`
-        UPDATE usuarios 
-        SET saldo_custodia = saldo_custodia + ? 
-        WHERE id = ?
-      `).run(valorMaoObra, proposta.prestador_id);
-
-      db.exec('COMMIT;');
-    } catch (txError) {
-      db.exec('ROLLBACK;');
-      throw txError;
-    }
+    const resultado = escrowService.bloquearCustodia({
+      ordemId: id,
+      propostaId: proposta_id ? parseInt(proposta_id, 10) : null,
+      metodoPagamento: metodo_pagamento,
+      cupom
+    });
 
     res.json({
       sucesso: true,
       mensagem: 'Pagamento processado com sucesso! Os fundos estão retidos em custódia segura.',
-      dados: {
-        ordem_id: id,
-        status: 'EM_CUSTODIA',
-        valor_mao_obra: valorMaoObra,
-        taxa_plataforma: taxaPlataforma,
-        valor_total: valorTotal,
-        prestador_id: proposta.prestador_id
-      }
+      dados: resultado
     });
   } catch (error) {
     console.error('[ERRO checkoutCustodia]:', error);
-    res.status(500).json({ sucesso: false, mensagem: 'Erro transacional no processamento do checkout.' });
+    res.status(error.status || 500).json({ sucesso: false, mensagem: error.message || 'Erro transacional no processamento do checkout.' });
   }
 };
 
@@ -406,6 +328,8 @@ exports.atualizarStatus = (req, res) => {
       WHERE id = ?
     `).run(novo_status, fotoSan || null, id);
 
+    notificationService.notificarMudancaStatus(ordem, novo_status);
+
     res.json({
       sucesso: true,
       mensagem: `Status da ordem atualizado para '${novo_status}'.`,
@@ -423,73 +347,26 @@ exports.aprovarVistoria = (req, res) => {
     const id = parseInt(req.params.id, 10);
     const { nota, comentario, cliente_id } = req.body;
 
-    const ordem = db.prepare('SELECT * FROM ordens_servico WHERE id = ?').get(id);
-    if (!ordem) {
-      return res.status(404).json({ sucesso: false, mensagem: 'Ordem de serviço não encontrada.' });
-    }
-
-    if (ordem.status !== 'AGUARDANDO_VISTORIA' && ordem.status !== 'EM_EXECUCAO') {
-      return res.status(400).json({
-        sucesso: false,
-        mensagem: `A ordem deve estar aguardando vistoria para aprovação. Status atual: '${ordem.status}'.`
-      });
-    }
-
-    const valorRepasse = parseFloat(ordem.valor_mao_obra);
-    const notaNum = Math.max(1, Math.min(5, parseInt(nota, 10) || 5));
-    const comentarioSan = sanitizarTexto(comentario, 500) || 'Serviço aprovado na vistoria presencial.';
-
-    db.exec('BEGIN TRANSACTION;');
-    try {
-      // 1. Marca ordem como CONCLUIDO
-      db.prepare(`
-        UPDATE ordens_servico 
-        SET status = 'CONCLUIDO', atualizado_em = CURRENT_TIMESTAMP
-        WHERE id = ?
-      `).run(id);
-
-      // 2. Transfere saldo da custódia para saldo disponível do prestador
-      db.prepare(`
-        UPDATE usuarios 
-        SET saldo_custodia = MAX(0, saldo_custodia - ?),
-            saldo_disponivel = saldo_disponivel + ?
-        WHERE id = ?
-      `).run(valorRepasse, valorRepasse, ordem.prestador_id);
-
-      // 3. Registra transação de liquidação
-      db.prepare(`
-        INSERT INTO transacoes_custodia (ordem_id, valor, tipo, status, detalhes)
-        VALUES (?, ?, 'LIBERACAO_REPASSE', 'CONFIRMADO', 'Vistoria aprovada. Valor transferido à carteira do prestador.')
-      `).run(id, valorRepasse);
-
-      // 4. Registra avaliação
-      const avaliadorId = parseInt(cliente_id, 10) || ordem.cliente_id;
-      db.prepare(`
-        INSERT INTO avaliacoes (ordem_id, avaliador_id, avaliado_id, nota, comentario)
-        VALUES (?, ?, ?, ?, ?)
-      `).run(id, avaliadorId, ordem.prestador_id, notaNum, comentarioSan);
-
-      // 5. Recalcula reputação com média ponderada
-      const avg = db.prepare(`SELECT AVG(nota) as media FROM avaliacoes WHERE avaliado_id = ?`).get(ordem.prestador_id);
-      if (avg && avg.media) {
-        db.prepare(`UPDATE usuarios SET reputacao = ROUND(?, 1) WHERE id = ?`).run(avg.media, ordem.prestador_id);
-      }
-
-      db.exec('COMMIT;');
-    } catch (txError) {
-      db.exec('ROLLBACK;');
-      throw txError;
-    }
+    const resultado = escrowService.liberarRepasse({
+      ordemId: id,
+      clienteId: cliente_id,
+      nota,
+      comentario
+    });
 
     res.json({
       sucesso: true,
       mensagem: 'Vistoria aprovada! Pagamento liberado com sucesso para a conta do prestador.',
-      valor_liberado: valorRepasse,
-      status: 'CONCLUIDO'
+      valor_liberado: resultado.valor_liberado,
+      status: resultado.status,
+      dados: resultado
     });
   } catch (error) {
     console.error('[ERRO aprovarVistoria]:', error);
-    res.status(500).json({ sucesso: false, mensagem: 'Erro transacional na liberação de vistoria.' });
+    res.status(error.status || 500).json({
+      sucesso: false,
+      mensagem: error.message || 'Erro transacional na liberação de vistoria.'
+    });
   }
 };
 
@@ -597,35 +474,21 @@ exports.listarTransacoes = (req, res) => {
 exports.solicitarSaque = (req, res) => {
   try {
     const { prestador_id, valor, chave_pix } = req.body;
-    const pId = parseInt(prestador_id, 10);
-    const valorNum = parseFloat(valor);
-
-    if (isNaN(pId) || isNaN(valorNum) || valorNum <= 0) {
-      return res.status(400).json({ sucesso: false, mensagem: 'Valor de saque ou ID inválido.' });
-    }
-
-    const prestador = db.prepare('SELECT * FROM usuarios WHERE id = ?').get(pId);
-    if (!prestador || prestador.papel !== 'PRESTADOR') {
-      return res.status(404).json({ sucesso: false, mensagem: 'Prestador não encontrado.' });
-    }
-
-    if (prestador.saldo_disponivel < valorNum) {
-      return res.status(400).json({
-        sucesso: false,
-        mensagem: `Saldo insuficiente. Disponível para saque imediato: R$ ${prestador.saldo_disponivel.toFixed(2)}`
-      });
-    }
-
-    db.prepare('UPDATE usuarios SET saldo_disponivel = saldo_disponivel - ? WHERE id = ?').run(valorNum, pId);
+    const resultado = escrowService.processarSaque({
+      prestadorId: prestador_id,
+      valor,
+      chavePix: chave_pix
+    });
 
     res.json({
       sucesso: true,
-      mensagem: `Saque PIX de R$ ${valorNum.toFixed(2)} processado com sucesso para a chave: ${sanitizarTexto(chave_pix, 100) || 'CPF/E-mail padrão'}!`,
-      novo_saldo: prestador.saldo_disponivel - valorNum
+      mensagem: `Saque PIX de R$ ${resultado.valor_sacado.toFixed(2)} processado com sucesso para a chave: ${resultado.chave_pix}!`,
+      novo_saldo: resultado.novo_saldo,
+      dados: resultado
     });
   } catch (error) {
     console.error('[ERRO solicitarSaque]:', error);
-    res.status(500).json({ sucesso: false, mensagem: 'Erro ao processar saque.' });
+    res.status(error.status || 500).json({ sucesso: false, mensagem: error.message || 'Erro ao processar saque.' });
   }
 };
 
@@ -635,38 +498,31 @@ exports.resolverDisputa = (req, res) => {
     const id = parseInt(req.params.id, 10);
     const { decisao, justificativa } = req.body;
 
-    const ordem = db.prepare('SELECT * FROM ordens_servico WHERE id = ?').get(id);
-    if (!ordem || ordem.status !== 'EM_DISPUTA') {
-      return res.status(400).json({ sucesso: false, mensagem: 'Esta ordem não se encontra em mediação de disputa.' });
-    }
-
-    const decisaoSan = (decisao === 'REPASSE_PRESTADOR') ? 'REPASSE_PRESTADOR' : 'ESTORNO_CLIENTE';
-    const justSan = sanitizarTexto(justificativa, 255) || 'Mediação concluída pelo suporte técnico.';
-
-    db.exec('BEGIN TRANSACTION;');
-    try {
-      if (decisaoSan === 'REPASSE_PRESTADOR') {
-        db.prepare("UPDATE ordens_servico SET status = 'CONCLUIDO', atualizado_em = CURRENT_TIMESTAMP WHERE id = ?").run(id);
-        db.prepare("UPDATE usuarios SET saldo_custodia = MAX(0, saldo_custodia - ?), saldo_disponivel = saldo_disponivel + ? WHERE id = ?").run(ordem.valor_mao_obra, ordem.valor_mao_obra, ordem.prestador_id);
-        db.prepare("INSERT INTO transacoes_custodia (ordem_id, valor, tipo, status, detalhes) VALUES (?, ?, 'LIBERACAO_REPASSE', 'CONFIRMADO', ?)").run(id, ordem.valor_mao_obra, `Disputa resolvida a favor do prestador. Parecer: ${justSan}`);
-      } else {
-        db.prepare("UPDATE ordens_servico SET status = 'CANCELADO', atualizado_em = CURRENT_TIMESTAMP WHERE id = ?").run(id);
-        db.prepare("UPDATE usuarios SET saldo_custodia = MAX(0, saldo_custodia - ?) WHERE id = ?").run(ordem.valor_mao_obra, ordem.prestador_id);
-        db.prepare("INSERT INTO transacoes_custodia (ordem_id, valor, tipo, status, detalhes) VALUES (?, ?, 'ESTORNO_DISPUTA', 'CONFIRMADO', ?)").run(id, ordem.valor_total, `Disputa resolvida com estorno integral ao cliente. Parecer: ${justSan}`);
-      }
-      db.exec('COMMIT;');
-    } catch (e) {
-      db.exec('ROLLBACK;');
-      throw e;
-    }
+    const resultado = escrowService.resolverArbitragem({
+      ordemId: id,
+      decisao,
+      justificativa
+    });
 
     res.json({
       sucesso: true,
-      mensagem: `Disputa na OS #${id} resolvida com decisão '${decisaoSan}'.`,
-      status_final: (decisaoSan === 'REPASSE_PRESTADOR' ? 'CONCLUIDO' : 'CANCELADO')
+      mensagem: `Disputa na OS #${id} resolvida com decisão '${resultado.decisao}'.`,
+      status_final: resultado.status_final,
+      dados: resultado
     });
   } catch (error) {
     console.error('[ERRO resolverDisputa]:', error);
-    res.status(500).json({ sucesso: false, mensagem: 'Erro ao arbitrar disputa.' });
+    res.status(error.status || 500).json({ sucesso: false, mensagem: error.message || 'Erro ao arbitrar disputa.' });
+  }
+};
+
+// 14. Listar Histórico de Notificações Multicanal (WhatsApp & E-mail)
+exports.listarNotificacoes = (req, res) => {
+  try {
+    const notificacoes = notificationService.listarNotificacoesRecentes();
+    res.json({ sucesso: true, dados: notificacoes });
+  } catch (error) {
+    console.error('[ERRO listarNotificacoes]:', error);
+    res.status(500).json({ sucesso: false, mensagem: 'Erro ao listar histórico de notificações.' });
   }
 };

@@ -18,8 +18,9 @@ router.patch('/ordens/:id/status', controller.atualizarStatus);
 router.post('/ordens/:id/aprovar', controller.aprovarVistoria);
 router.post('/ordens/:id/disputa', controller.abrirDisputa);
 
-// Novas Funcionalidades: Livro-Razão Escrow, Saques e Mediação
+// Novas Funcionalidades: Livro-Razão Escrow, Saques, Notificações e Mediação
 router.get('/transacoes', controller.listarTransacoes);
+router.get('/notificacoes', controller.listarNotificacoes);
 router.post('/prestador/saque', controller.solicitarSaque);
 router.post('/disputas/:id/resolver', controller.resolverDisputa);
 
