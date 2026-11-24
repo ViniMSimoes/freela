@@ -1,26 +1,26 @@
-# FreeLA — Plataforma de Serviços com Garantia Escrow
+# FreeLA: Plataforma de Serviços com Garantia Escrow
 
 O FreeLA intermedia serviços residenciais e reparos manuais. A plataforma utiliza um motor de custódia financeira (Escrow) que retém o pagamento do cliente. O repasse financeiro ao prestador ocorre apenas após a vistoria presencial e a aprovação formal do cliente.
 
 ---
 
-## 1. Visão Geral do Produto
+## 1 Visão Geral do Produto
 
 A contratação informal de serviços manuais (eletricistas, encanadores, pintores, pedreiros) gera desconfiança mútua. Clientes temem prejuízos por serviços incompletos ou mal executados. Prestadores autônomos enfrentam inadimplência e atrasos no pagamento após a entrega da mão de obra.
 
 O **FreeLA** soluciona esse problema através da garantia transacional:
-- O cliente aceita o orçamento e efetua o pagamento antecipado via PIX ou Cartão de Crédito.
-- O sistema retém o valor integral em conta de custódia protegida (Escrow).
-- O prestador realiza o reparo com a certeza do recurso garantido.
-- O cliente inspeciona o resultado presencialmente e homologa a vistoria no aplicativo.
-- O motor de escrow libera o repasse imediatamente para a carteira digital do prestador.
-- Caso ocorram inconformidades, a plataforma disponibiliza mediação e estorno integral.
+* O cliente aceita o orçamento e efetua o pagamento antecipado via PIX ou Cartão de Crédito.
+* O sistema retém o valor integral em conta de custódia protegida (Escrow).
+* O prestador realiza o reparo com a certeza do recurso garantido.
+* O cliente inspeciona o resultado presencialmente e homologa a vistoria no aplicativo.
+* O motor de escrow libera o repasse imediatamente para a carteira digital do prestador.
+* Caso ocorram inconformidades, a plataforma disponibiliza mediação e estorno integral.
 
-**Parceiro Extensionista:** Comunidade de Moradores e Profissionais Autônomos de Volta Redonda/RJ (Práticas Extensionistas Integradoras III — Engenharia de Software, Centro Universitário de Barra Mansa - UBM, 2026).
+**Parceiro Extensionista:** Comunidade de Moradores e Profissionais Autônomos de Volta Redonda/RJ (Práticas Extensionistas Integradoras III: Engenharia de Software, Centro Universitário de Barra Mansa: UBM, 2026).
 
 ---
 
-## 2. Tecnologias Utilizadas
+## 2 Tecnologias Utilizadas
 
 | Tecnologia | Versão | Função na Arquitetura |
 |---|---|---|
@@ -35,24 +35,24 @@ O **FreeLA** soluciona esse problema através da garantia transacional:
 
 ---
 
-## 3. Pré-requisitos e Ambiente
+## 3 Pré-requisitos e Ambiente
 
 Para executar o FreeLA localmente, instale os seguintes requisitos:
 
 1. **Node.js versão 22.5.0 ou superior** (Recomendado Node.js 22 LTS ou 24 LTS):
-   - O projeto utiliza a biblioteca nativa `node:sqlite`. Essa biblioteca requer o Node.js `>= 22.5.0`.
-   - Verifique sua versão no terminal: `node --version`.
+   * O projeto utiliza a biblioteca nativa `node:sqlite`. Essa biblioteca requer o Node.js `>= 22.5.0`.
+   * Verifique sua versão no terminal: `node --version`.
    > [!NOTE]
    > No Node.js 22, o runtime exibe a mensagem informativa `ExperimentalWarning: SQLite is an experimental feature`. Esse aviso confirma o carregamento do módulo nativo e não interfere na execução estável da aplicação.
 
 2. **Git versão 2.x ou superior**:
-   - Verifique sua versão no terminal: `git --version`.
+   * Verifique sua versão no terminal: `git --version`.
 
 3. **Navegador Web Moderno** (Google Chrome, Microsoft Edge, Mozilla Firefox ou Safari).
 
 ---
 
-## 4. Instalação Passo a Passo
+## 4 Instalação Passo a Passo
 
 1. Clone o repositório oficial no terminal:
    ```bash
@@ -86,7 +86,7 @@ O banco de dados SQLite (`freela.db`) cria suas tabelas e insere dados iniciais 
 
 ---
 
-## 5. Como Executar a Aplicação
+## 5 Como Executar a Aplicação
 
 Inicie o servidor HTTP:
 
@@ -114,7 +114,7 @@ Abra seu navegador no endereço: **`http://localhost:3000`**
 
 ---
 
-## 6. Capturas Reais da Aplicação
+## 6 Capturas Reais da Aplicação
 
 ### Mural de Ordens e Indicadores (Dashboard)
 Interface principal com métricas financeiras de custódia, filtros por especialidade e barra de progresso operacional das ordens de serviço:
@@ -124,17 +124,17 @@ Interface principal com métricas financeiras de custódia, filtros por especial
 Auditoria transacional detalhada com registro de retenções (`BLOQUEIO_ESCROW`), liberações (`LIBERACAO_REPASSE`) e estornos:
 ![Livro-Razão Escrow](docs/img/print_escrow.png)
 
-### Carteira Digital do Prestador & Saque PIX
+### Carteira Digital do Prestador e Saque PIX
 Visualização de saldos operacionais (disponível vs. em garantia) e formulário de resgate financeiro instantâneo via PIX:
 ![Carteira Digital do Prestador](docs/img/print_carteira.png)
 
-### Central de Mensageria & Notificações Multicanal
+### Central de Mensageria e Notificações Multicanal
 Registro auditável de disparos de notificações automáticas via WhatsApp e E-mail transacional para clientes e prestadores:
 ![Central de Notificações](docs/img/print_notificacoes.png)
 
 ---
 
-## 7. Suíte de Testes Automatizados
+## 7 Suíte de Testes Automatizados
 
 O sistema inclui 16 testes automatizados de integração que cobrem os requisitos de negócio, segurança OWASP, controle de concorrência e integridade referencial:
 
@@ -191,7 +191,7 @@ Saída oficial do terminal:
 
 ---
 
-## 8. Estrutura de Diretórios do Projeto
+## 8 Estrutura de Diretórios do Projeto
 
 ```text
 freela/
@@ -235,17 +235,17 @@ freela/
 
 ---
 
-## 9. Documentos Técnicos da Disciplina
+## 9 Documentos Técnicos da Disciplina
 
-- [Manual Técnico Parcial (Arquitetura & API REST)](docs/manual-tecnico-parcial.md)
-- [Product Backlog Atualizado Versão 2.0](docs/backlog-atualizado.md)
-- [Estrutura do Banco de Dados & DER Relacional](docs/estrutura-banco-de-dados.md)
-- [Diagrama Entidade-Relacionamento (DER)](docs/img/diagrama_der.png)
-- [Diagrama de Arquitetura de Componentes](docs/img/diagrama_componentes.png)
+* [Manual Técnico Parcial (Arquitetura & API REST)](docs/manual-tecnico-parcial.md)
+* [Product Backlog Atualizado Versão 2.0](docs/backlog-atualizado.md)
+* [Estrutura do Banco de Dados & DER Relacional](docs/estrutura-banco-de-dados.md)
+* [Diagrama Entidade-Relacionamento (DER)](docs/img/diagrama_der.png)
+* [Diagrama de Arquitetura de Componentes](docs/img/diagrama_componentes.png)
 
 ---
 
-## 10. Integrantes da Equipe
+## 10 Integrantes da Equipe
 
 | Integrante | GitHub |
 |---|---|
@@ -258,10 +258,10 @@ freela/
 
 ---
 
-## 11. Licença
+## 11 Licença
 
 Este projeto é distribuído sob a licença [MIT](LICENSE).
 
 **Centro Universitário de Barra Mansa (UBM)**  
-Curso de Engenharia de Software — Práticas Extensionistas Integradoras III (2026)  
+Curso de Engenharia de Software: Práticas Extensionistas Integradoras III (2026)  
 Orientação: Profa. Ma. Laila Alves Santos
