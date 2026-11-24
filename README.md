@@ -1,212 +1,267 @@
-# FreeLA
+# FreeLA — Plataforma de Serviços com Garantia Escrow
 
-Plataforma SaaS de intermediação de serviços manuais e reparos residenciais com pagamento protegido em custódia (Escrow) até a vistoria e aprovação final do cliente.
+O FreeLA intermedia serviços residenciais e reparos manuais. A plataforma utiliza um motor de custódia financeira (Escrow) que retém o pagamento do cliente. O repasse financeiro ao prestador ocorre apenas após a vistoria presencial e a aprovação formal do cliente.
 
-## Documentação da Entrega — Critérios de Avaliação (13/11)
+---
 
-| Critério | O que foi entregue | Onde encontrar no repositório | Avaliação Alvo |
-|---|---|---|:---:|
-| **C1. Repositório no GitHub** | Repositório público ativo, commits regulares distribuídos entre os integrantes da equipe com mensagens semânticas | [Histórico de Commits](https://github.com/ViniMSimoes/freela/commits/main) | **Completo (1,5 pts)** |
-| **C2. README e Manual Técnico Parcial** | README completo com passos de execução testados do zero e manual técnico aprofundado com Arquitetura (Opção C) e API (Opção B1) | [README.md](README.md) e [Manual Técnico Parcial](docs/manual-tecnico-parcial.md) | **Completo (1,5 pts)** |
-| **C3. Product Backlog Atualizado** | Backlog versão 2.0 priorizado, detalhando o que mudou desde 16/10, itens entregues no MVP e rastreabilidade com testes | [Backlog Atualizado](docs/backlog-atualizado.md) | **Completo (1,0 pt)** |
-| **C4. Estrutura do Banco de Dados** | Modelagem relacional SQLite com DER/MER, integridade referencial, dicionário de tabelas e coerência com diagramas | [Estrutura do Banco de Dados](docs/estrutura-banco-de-dados.md) e [schema.sql](src/database/schema.sql) | **Completo (1,0 pt)** |
+## 1. Visão Geral do Produto
 
-## Sobre o projeto
+A contratação informal de serviços manuais (eletricistas, encanadores, pintores, pedreiros) gera desconfiança mútua. Clientes temem prejuízos por serviços incompletos ou mal executados. Prestadores autônomos enfrentam inadimplência e atrasos no pagamento após a entrega da mão de obra.
 
-A contratação informal de serviços manuais residenciais (como eletricistas, encanadores, pintores e pedreiros) gera constante insegurança financeira para ambas as partes: clientes temem pagar adiantado e receber um serviço mal executado ou abandonado, enquanto prestadores autônomos sofrem com calotes e atrasos após realizarem a mão de obra.
+O **FreeLA** soluciona esse problema através da garantia transacional:
+- O cliente aceita o orçamento e efetua o pagamento antecipado via PIX ou Cartão de Crédito.
+- O sistema retém o valor integral em conta de custódia protegida (Escrow).
+- O prestador realiza o reparo com a certeza do recurso garantido.
+- O cliente inspeciona o resultado presencialmente e homologa a vistoria no aplicativo.
+- O motor de escrow libera o repasse imediatamente para a carteira digital do prestador.
+- Caso ocorram inconformidades, a plataforma disponibiliza mediação e estorno integral.
 
-O **FreeLA** resolve esse gargalo através de um mecanismo transacional de **custódia financeira (Escrow)**. O cliente realiza o pagamento no momento do aceite da proposta, mas o valor permanece retido e bloqueado pela plataforma. O repasse financeiro para o prestador só é liberado após a conclusão do serviço e a vistoria presencial aprovada pelo próprio cliente no aplicativo.
+**Parceiro Extensionista:** Comunidade de Moradores e Profissionais Autônomos de Volta Redonda/RJ (Práticas Extensionistas Integradoras III — Engenharia de Software, Centro Universitário de Barra Mansa - UBM, 2026).
 
-Parceiro extensionista: Comunidade de Moradores e Profissionais Autônomos de Volta Redonda/RJ (Práticas Extensionistas Integradoras III — UBM).
+---
 
-## Tecnologias
+## 2. Tecnologias Utilizadas
 
-| Tecnologia | Versão | Para que serve no projeto |
+| Tecnologia | Versão | Função na Arquitetura |
 |---|---|---|
-| Node.js | 24.18.0 (LTS) | Ambiente de execução JavaScript no servidor |
-| Express | 4.21.2 | Framework web minimalista para construção da API REST |
-| SQLite | 3 (`node:sqlite`) | Banco de dados relacional embutido para persistência transacional |
-| HTML5 / CSS3 / JS | Padrão W3C | Interface web SPA limpa, intuitiva e sem dependências pesadas |
-| CORS | 2.8.5 | Middleware para controle de acesso HTTP e segurança |
+| **Node.js** | `>= 22.5.0` (LTS) | Ambiente de execução JavaScript no servidor |
+| **Express** | `4.21.2` | Framework para construção dos endpoints da API REST |
+| **SQLite (`node:sqlite`)** | Nativo | Mecanismo relacional embutido com transações ACID |
+| **Helmet** | `8.0.0` | Middleware de cabeçalhos HTTP para proteção contra ataques OWASP |
+| **Express Rate Limit** | `7.5.0` | Proteção contra sobrecarga de requisições (DoS e força bruta) |
+| **Dotenv** | `16.4.7` | Gerenciamento seguro de variáveis de ambiente |
+| **HTML5 / CSS3 / JS** | Padrão W3C | Interface SPA modular (Vanilla CSS3/BEM, sem dependências externas) |
+| **CORS** | `2.8.5` | Controle de compartilhamento de recursos entre origens |
 
-## Pré-requisitos
+---
 
-Antes de iniciar, certifique-se de ter instalado em seu computador:
+## 3. Pré-requisitos e Ambiente
 
-- **Node.js** versão 20.x ou superior (recomendado 24.x) — [Download oficial do Node.js](https://nodejs.org/)
-  - Para conferir no terminal: `node --version`
-- **Git** versão 2.x ou superior — [Download oficial do Git](https://git-scm.com/)
-  - Para conferir no terminal: `git --version`
+Para executar o FreeLA localmente, instale os seguintes requisitos:
 
-## Instalação
+1. **Node.js versão 22.5.0 ou superior** (Recomendado Node.js 22 LTS ou 24 LTS):
+   - O projeto utiliza a biblioteca nativa `node:sqlite`. Essa biblioteca requer o Node.js `>= 22.5.0`.
+   - Verifique sua versão no terminal: `node --version`.
+   > [!NOTE]
+   > No Node.js 22, o runtime exibe a mensagem informativa `ExperimentalWarning: SQLite is an experimental feature`. Esse aviso confirma o carregamento do módulo nativo e não interfere na execução estável da aplicação.
 
-1. Clone o repositório:
+2. **Git versão 2.x ou superior**:
+   - Verifique sua versão no terminal: `git --version`.
 
+3. **Navegador Web Moderno** (Google Chrome, Microsoft Edge, Mozilla Firefox ou Safari).
+
+---
+
+## 4. Instalação Passo a Passo
+
+1. Clone o repositório oficial no terminal:
    ```bash
    git clone https://github.com/ViniMSimoes/freela.git
    cd freela
    ```
 
-2. Instale as dependências do projeto:
-
+2. Instale as dependências declaradas no projeto:
    ```bash
    npm install
    ```
 
-3. O banco de dados relacional SQLite (`freela.db`) é criado e populado automaticamente com dados de exemplo (usuários, ordens ativas e transações) na primeira inicialização da aplicação.
+3. Configure o arquivo de variáveis de ambiente:
+   ```bash
+   # No Linux ou macOS:
+   cp .env.example .env
 
-## Configuração
+   # No Windows PowerShell:
+   Copy-Item .env.example .env
+   ```
 
-Copie o arquivo de variáveis de ambiente de exemplo:
+4. Variáveis de ambiente configuráveis no `.env`:
 
-```bash
-cp .env.example .env
-```
+| Variável | Padrão | Descrição |
+|---|---|---|
+| `PORT` | `3000` | Porta TCP onde o servidor Express atenderá as requisições HTTP |
+| `NODE_ENV` | `development` | Identificador do ambiente de execução |
+| `DB_PATH` | `./freela.db` | Caminho do arquivo de banco de dados SQLite local |
 
-*(No Windows PowerShell, você pode usar: `Copy-Item .env.example .env`)*
+O banco de dados SQLite (`freela.db`) cria suas tabelas e insere dados iniciais (seed) automaticamente na primeira inicialização.
 
-| Variável | Obrigatória? | Exemplo | Descrição |
-|---|---|---|---|
-| `PORT` | Não | `3000` | Porta HTTP em que o servidor web e a API estarão disponíveis |
-| `NODE_ENV` | Não | `development` | Ambiente de execução (`development` ou `production`) |
-| `DB_PATH` | Não | `./freela.db` | Caminho do arquivo de banco de dados SQLite local |
+---
 
-## Como executar
+## 5. Como Executar a Aplicação
 
-Para iniciar a aplicação em modo de produção:
+Inicie o servidor HTTP:
 
 ```bash
 npm start
 ```
 
-Para iniciar em modo de desenvolvimento com recarregamento automático:
+Para desenvolvimento com reinicialização automática mediante alterações no código:
 
 ```bash
 npm run dev
 ```
 
-Quando a inicialização for concluída, você verá no terminal a mensagem:
+O terminal exibirá a confirmação de inicialização segura:
 
 ```text
 ====================================================
- FreeLA SaaS — Servidor Ativo na porta 3000
+ FreeLA SaaS (Hardened) — Servidor Ativo na porta 3000
+ Proteções ativas: Helmet, Rate Limiting, Sanitização
  Acesse no navegador: http://localhost:3000
- API REST base: http://localhost:3000/api/ordens
 ====================================================
 ```
 
-Abra o seu navegador e acesse: **`http://localhost:3000`**
+Abra seu navegador no endereço: **`http://localhost:3000`**
 
-## Exemplo de uso
+---
 
-O fluxo principal do FreeLA cobre o ciclo completo de contratação protegida:
+## 6. Capturas Reais da Aplicação
 
-1. **Visão do Cliente:**
-   - Acesse `http://localhost:3000`.
-   - Clique em **"+ Solicitar Reparo"** e preencha a categoria (*ex.: Elétrica*), descrição do defeito, CEP e urgência.
-   - A ordem entra no mural com status **Pendente**.
+### Mural de Ordens e Indicadores (Dashboard)
+Interface principal com métricas financeiras de custódia, filtros por especialidade e barra de progresso operacional das ordens de serviço:
+![Mural de Ordens do FreeLA](docs/img/print_mural.png)
 
-2. **Visão do Prestador:**
-   - Clique no botão superior **"Alternar para Prestador (Carlos)"**.
-   - No card da ordem aberta, clique em **"Enviar Orçamento"**, defina o valor da mão de obra (ex.: `R$ 220,00`) e o prazo estimado.
+### Livro-Razão de Custódia (Escrow Ledger)
+Auditoria transacional detalhada com registro de retenções (`BLOQUEIO_ESCROW`), liberações (`LIBERACAO_REPASSE`) e estornos:
+![Livro-Razão Escrow](docs/img/print_escrow.png)
 
-3. **Aceite e Pagamento em Custódia (Escrow):**
-   - Retorne para a visão do Cliente e clique em **"Ver Propostas"**.
-   - Clique em **"Contratar com Custódia Protegida (Escrow)"**. O pagamento é retido pela plataforma e o status avança para **Em Custódia**.
+### Carteira Digital do Prestador & Saque PIX
+Visualização de saldos operacionais (disponível vs. em garantia) e formulário de resgate financeiro instantâneo via PIX:
+![Carteira Digital do Prestador](docs/img/print_carteira.png)
 
-4. **Execução e Conclusão:**
-   - O prestador atualiza o chamado: **"A Caminho"** ➔ **"Iniciar Reparo"** ➔ **"Concluir Reparo"**.
-   - O status avança para **Vistoria Pendente**.
+### Central de Mensageria & Notificações Multicanal
+Registro auditável de disparos de notificações automáticas via WhatsApp e E-mail transacional para clientes e prestadores:
+![Central de Notificações](docs/img/print_notificacoes.png)
 
-5. **Vistoria e Liberação Financeira:**
-   - O cliente avalia presencialmente o conserto e clica em **"Aprovar & Liberar"**.
-   - O motor financeiro executa a liquidação automática: os fundos custodiados são transferidos para o saldo disponível do prestador e a avaliação por estrelas é registrada.
+---
 
-![Prancha de Telas e Wireframe do FreeLA](docs/img/wireframe_board.png)
+## 7. Suíte de Testes Automatizados
 
-## Testes
+O sistema inclui 16 testes automatizados de integração que cobrem os requisitos de negócio, segurança OWASP, controle de concorrência e integridade referencial:
 
-O projeto conta com uma suíte de testes de integração automatizados que verifica todas as 7 etapas críticas da API REST (estatísticas, listagem, criação de ordem, proposta, retenção no escrow, transições de status e aprovação de vistoria com repasse).
-
-Para executar os testes:
+Execute os testes com o comando:
 
 ```bash
 npm test
 ```
 
-Resultado esperado no terminal:
+Saída oficial do terminal:
 
 ```text
---- INICIANDO TESTES AUTOMATIZADOS DO FREELA MVP ---
-• Teste 1: GET /api/stats -> ✓ Estatísticas retornadas com sucesso.
-• Teste 2: GET /api/ordens -> ✓ Total de ordens listadas
-• Teste 3: POST /api/ordens -> ✓ Ordem criada com ID
-• Teste 4: POST /api/ordens/:id/propostas -> ✓ Proposta registrada
-• Teste 5: POST /api/ordens/:id/checkout -> ✓ Valor retido na custódia segura
-• Teste 6: PATCH /api/ordens/:id/status -> ✓ Ordem avançada para AGUARDANDO_VISTORIA
-• Teste 7: POST /api/ordens/:id/aprovar -> ✓ Vistoria aprovada e saldo liberado
+======================================================
+ SUÍTE DE TESTES RIGOROSOS — FREELA ESCROW SAAS (C1-C4)
+======================================================
+
+• Teste 1: GET /api/stats (Estatísticas do Dashboard)
+  ✓ Estatísticas retornadas com sucesso.
+• Teste 2: Verificação de Cabeçalhos HTTP de Segurança (Helmet & OWASP)
+  ✓ Cabeçalhos de segurança ativos (X-Content-Type-Options: nosniff, X-Powered-By omitido).
+• Teste 3: GET /api/usuarios (Listagem de Usuários e Perfis)
+  ✓ Total de usuários listados: 3.
+• Teste 4: GET /api/ordens (Listagem de Chamados com Filtros)
+  ✓ Total de ordens listadas: 9
+• Teste 5: POST /api/ordens (Criação de Chamado com Defesa XSS)
+  ✓ Ordem criada com ID #10 e payload malicioso sanitizado com sucesso.
+• Teste 6: POST /api/ordens/:id/propostas (Validação Estrita de Valor Negativo)
+  ✓ Proposta com valor negativo bloqueada com sucesso (HTTP 400).
+• Teste 7: POST /api/ordens/:id/propostas (Registro de Proposta Válida)
+  ✓ Proposta #8 registrada com sucesso.
+• Teste 8: POST /api/ordens/:id/checkout (Bloqueio Transacional em Escrow)
+  ✓ Valor total R$ 468 retido com sucesso na custódia segura.
+• Teste 9: POST /api/ordens/:id/checkout (Proteção Anti Double-Spending)
+  ✓ Tentativa de pagamento duplo bloqueada com sucesso (HTTP 400).
+• Teste 10: POST /api/ordens/:id/aprovar (Bloqueio de Aprovação em EM_EXECUCAO)
+  ✓ Tentativa de liberação de repasse durante EM_EXECUCAO bloqueada (HTTP 400).
+• Teste 11: POST /api/ordens/:id/aprovar (Validação de Titularidade - HTTP 403)
+  ✓ Tentativa de aprovação por usuário não-titular rejeitada com HTTP 403 Forbidden.
+• Teste 12: POST /api/ordens/:id/aprovar (Homologação Legítima e Repasse)
+  ✓ Vistoria homologada! R$ 450 liberados à carteira do prestador.
+• Teste 13: GET /api/transacoes (Livro-Razão Escrow Auditável)
+  ✓ Total de movimentações auditadas no livro-razão: 16
+• Teste 14: POST /api/prestador/saque (Resgate via PIX)
+  ✓ Saque PIX processado com sucesso. Novo saldo disponível: R$ 3800
+• Teste 15: GET /api/notificacoes (Log Auditável de Mensageria)
+  ✓ Log de mensageria ativo com 11 notificações registradas (WhatsApp/Email).
+• Teste 16: PRAGMA foreign_keys = ON (Enforcement Estrito de Chaves Estrangeiras)
+  ✓ Inserção com chave estrangeira inexistente rejeitada pelo SQLite (Integridade ativa).
 
 ======================================================
- TODOS OS 7 TESTES AUTOMATIZADOS PASSARAM COM SUCESSO! 
+ TODOS OS 16 TESTES PASSARAM COM 100% DE SUCESSO!     
 ======================================================
 ```
 
-## Estrutura do projeto
+---
+
+## 8. Estrutura de Diretórios do Projeto
 
 ```text
 freela/
-├── docs/
-│   ├── img/                           # Diagramas de arquitetura, UML, BPMN e wireframes
-│   │   ├── diagrama_bpmn.png          # Processo de negócio em BPMN 2.0
-│   │   ├── diagrama_classes.png       # Modelo de classes de domínio
-│   │   ├── diagrama_componentes.png   # Diagrama de componentes (Aula 7)
-│   │   └── wireframe_board.png        # Telas e fluxo da aplicação
-│   └── manual-tecnico-parcial.md      # Manual técnico detalhado (Arquitetura e API)
-├── public/                            # Interface web SPA do frontend
+├── docs/                                # Documentação técnica de engenharia
+│   ├── img/                             # Diagramas e capturas reais da aplicação
+│   │   ├── diagrama_der.png             # Modelo Lógico Entidade-Relacionamento
+│   │   ├── diagrama_componentes.png     # Arquitetura de Componentes e Serviços
+│   │   ├── print_mural.png              # Interface do mural e métricas
+│   │   ├── print_escrow.png             # Interface do livro-razão de custódia
+│   │   ├── print_carteira.png           # Interface da carteira digital e saque PIX
+│   │   └── print_notificacoes.png       # Interface de logs WhatsApp & E-mail
+│   ├── manual-tecnico-parcial.md        # Manual Técnico Parcial (Arquitetura e API)
+│   ├── backlog-atualizado.md            # Product Backlog versão 2.0 priorizado
+│   └── estrutura-banco-de-dados.md      # Documentação formal do banco de dados (DER/DDL)
+├── public/                              # Camada de apresentação SPA (Frontend)
 │   ├── css/
-│   │   └── style.css                  # Estilos limpos e neutros de alto contraste
+│   │   └── style.css                    # Folha de estilos arquitetônica e neutra
 │   ├── js/
-│   │   └── app.js                     # Controlador do frontend e consumo da API REST
-│   └── index.html                     # Estrutura HTML5 da aplicação
-├── src/                               # Código-fonte do backend
+│   │   └── app.js                       # Controlador client-side e integração REST
+│   └── index.html                       # Marcação estrutural semântica HTML5
+├── src/                                 # Camada de serviços e regras de negócio (Backend)
 │   ├── controllers/
-│   │   └── ordensController.js        # Lógica de negócio, máquina de estados e custódia
+│   │   └── ordensController.js          # Orquestrador HTTP de ordens e chamadas
 │   ├── database/
-│   │   ├── connection.js              # Conexão e rotina de seed com SQLite nativo
-│   │   └── schema.sql                 # Modelo relacional de tabelas
+│   │   ├── connection.js                # Inicializador SQLite e ativação de foreign keys
+│   │   └── schema.sql                   # Estrutura DDL relacional em 3FN
 │   ├── routes/
-│   │   └── api.js                     # Definição dos endpoints RESTful
-│   └── server.js                      # Configuração e inicialização do Express
+│   │   └── api.js                       # Definição e roteamento dos endpoints da API
+│   ├── services/
+│   │   ├── escrowService.js             # Motor desacoplado de custódia financeira
+│   │   └── notificationService.js       # Serviço multicanal de mensagens (Zap/Email)
+│   └── server.js                        # Inicialização do Express com middlewares de segurança
 ├── tests/
-│   └── api.test.js                    # Testes automatizados ponta a ponta da API
-├── .env.example                       # Modelo de variáveis de ambiente
-├── .gitignore                         # Arquivos ignorados pelo controle de versão
-├── LICENSE                            # Licença de código aberto (MIT)
-├── package.json                       # Metadados e dependências do projeto
-└── README.md                          # Este documento
+│   └── api.test.js                      # Suíte de 16 testes automatizados de integração
+├── .env.example                         # Modelo de configuração de variáveis de ambiente
+├── .gitignore                           # Regras de exclusão do controle de versão
+├── LICENSE                              # Termo de licença MIT
+├── package.json                         # Manifesto de pacotes e scripts do Node.js
+└── README.md                            # Guia principal de introdução e operação
 ```
 
-## Documentação complementar
+---
 
-- [Manual Técnico Parcial (Arquitetura & API)](docs/manual-tecnico-parcial.md)
-- [Estrutura do Banco de Dados & DER (Critério C4)](docs/estrutura-banco-de-dados.md)
-- [Product Backlog Atualizado Versão 2.0 (Critério C3)](docs/backlog-atualizado.md)
-- [Relatório de Auditoria de Segurança & Hardening](docs/relatorio-auditoria-seguranca.md)
+## 9. Documentos Técnicos da Disciplina
+
+- [Manual Técnico Parcial (Arquitetura & API REST)](docs/manual-tecnico-parcial.md)
+- [Product Backlog Atualizado Versão 2.0](docs/backlog-atualizado.md)
+- [Estrutura do Banco de Dados & DER Relacional](docs/estrutura-banco-de-dados.md)
 - [Diagrama Entidade-Relacionamento (DER)](docs/img/diagrama_der.png)
-- [Diagrama de Componentes](docs/img/diagrama_componentes.png)
-- [Diagrama de Classes de Domínio](docs/img/diagrama_classes.png)
-- [Diagrama BPMN 2.0 do Processo de Negócio](docs/img/diagrama_bpmn.png)
+- [Diagrama de Arquitetura de Componentes](docs/img/diagrama_componentes.png)
 
-## Equipe
+---
 
-- Vinicius Marcello Simoes
-- Kaique
-- Caio
-- Yago
-- Lucas Augusto
-- Lucas Gabriel
+## 10. Integrantes da Equipe
 
-## Licença [MIT](LICENSE)
+| Integrante | GitHub |
+|---|---|
+| Vinicius Marcello Simoes | [@ViniMSimoes](https://github.com/ViniMSimoes) |
+| Kaique | [@kaique](https://github.com) |
+| Caio | [@caio](https://github.com) |
+| Yago | [@yago](https://github.com) |
+| Lucas Augusto | [@lucasaugusto](https://github.com) |
+| Lucas Gabriel | [@lucasgabriel](https://github.com) |
 
-Projeto desenvolvido na disciplina **Práticas Extensionistas Integradoras III — Engenharia de Software**, Centro Universitário de Barra Mansa (UBM), 2026.
-Orientação: Profa. Ma. Laila Alves Santos.
+---
+
+## 11. Licença
+
+Este projeto é distribuído sob a licença [MIT](LICENSE).
+
+**Centro Universitário de Barra Mansa (UBM)**  
+Curso de Engenharia de Software — Práticas Extensionistas Integradoras III (2026)  
+Orientação: Profa. Ma. Laila Alves Santos
