@@ -1,16 +1,19 @@
 const assert = require('node:assert');
 const app = require('../src/server');
+const db = require('../src/database/connection');
 
 const PORT = 3099;
 
 async function runTests() {
-  console.log('\n--- INICIANDO SUÍTE COMPLETA DE TESTES, SEGURANÇA & NOVAS FUNÇÕES ---');
+  console.log('\n======================================================');
+  console.log(' SUÍTE DE TESTES RIGOROSOS — FREELA ESCROW SAAS (C1-C4)');
+  console.log('======================================================\n');
   
   const server = app.listen(PORT);
   const baseUrl = `http://localhost:${PORT}/api`;
 
   try {
-    // Teste 1: Obter Estatísticas
+    // Teste 1: Obter Estatísticas do Dashboard
     console.log('• Teste 1: GET /api/stats (Estatísticas do Dashboard)');
     const resStats = await fetch(`${baseUrl}/stats`);
     assert.strictEqual(resStats.status, 200);
@@ -18,15 +21,24 @@ async function runTests() {
     assert.strictEqual(dataStats.sucesso, true);
     console.log('  ✓ Estatísticas retornadas com sucesso.');
 
-    // Teste 2: Verificação de Cabeçalhos de Segurança (OWASP / Helmet)
-    console.log('• Teste 2: Verificação de Cabeçalhos HTTP de Segurança (Helmet)');
+    // Teste 2: Cabeçalhos HTTP de Segurança (Helmet e OWASP)
+    console.log('• Teste 2: Verificação de Cabeçalhos HTTP de Segurança (Helmet & OWASP)');
     assert.strictEqual(resStats.headers.get('x-content-type-options'), 'nosniff');
     assert.strictEqual(resStats.headers.get('x-frame-options'), 'SAMEORIGIN');
     assert.strictEqual(resStats.headers.get('x-powered-by'), null);
     console.log('  ✓ Cabeçalhos de segurança ativos (X-Content-Type-Options: nosniff, X-Powered-By omitido).');
 
-    // Teste 3: Listar Ordens
-    console.log('• Teste 3: GET /api/ordens (Listagem de Chamados)');
+    // Teste 3: Listar Usuários
+    console.log('• Teste 3: GET /api/usuarios (Listagem de Usuários e Perfis)');
+    const resUsers = await fetch(`${baseUrl}/usuarios`);
+    assert.strictEqual(resUsers.status, 200);
+    const dataUsers = await resUsers.json();
+    assert.strictEqual(dataUsers.sucesso, true);
+    assert.ok(dataUsers.dados.length >= 3);
+    console.log(`  ✓ Total de usuários listados: ${dataUsers.dados.length}.`);
+
+    // Teste 4: Listar Ordens de Serviço
+    console.log('• Teste 4: GET /api/ordens (Listagem de Chamados com Filtros)');
     const resOrdens = await fetch(`${baseUrl}/ordens`);
     assert.strictEqual(resOrdens.status, 200);
     const dataOrdens = await resOrdens.json();
@@ -34,8 +46,8 @@ async function runTests() {
     assert.ok(Array.isArray(dataOrdens.dados));
     console.log(`  ✓ Total de ordens listadas: ${dataOrdens.total}`);
 
-    // Teste 4: Criar Nova Ordem com Sanitização de XSS
-    console.log('• Teste 4: POST /api/ordens (Criação de Chamado com Sanitização)');
+    // Teste 5: Criação de Nova Ordem com Sanitização de Payload Malicioso (XSS)
+    console.log('• Teste 5: POST /api/ordens (Criação de Chamado com Defesa XSS)');
     const resNova = await fetch(`${baseUrl}/ordens`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -54,10 +66,10 @@ async function runTests() {
     assert.strictEqual(dataNova.sucesso, true);
     assert.strictEqual(dataNova.dados.titulo.includes('<script>'), false);
     const novaOrdemId = dataNova.dados.id;
-    console.log(`  ✓ Ordem criada com ID ${novaOrdemId} e payload malicioso sanitizado com sucesso.`);
+    console.log(`  ✓ Ordem criada com ID #${novaOrdemId} e payload malicioso sanitizado com sucesso.`);
 
-    // Teste 5: Segurança - Rejeição de Proposta com Valor Negativo
-    console.log('• Teste 5: POST /api/ordens/:id/propostas (Validação de Valor Negativo)');
+    // Teste 6: Rejeição de Proposta com Valor Negativo
+    console.log('• Teste 6: POST /api/ordens/:id/propostas (Validação Estrita de Valor Negativo)');
     const resPropNegativa = await fetch(`${baseUrl}/ordens/${novaOrdemId}/propostas`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -68,10 +80,10 @@ async function runTests() {
       })
     });
     assert.strictEqual(resPropNegativa.status, 400);
-    console.log('  ✓ Proposta inválida com valor negativo bloqueada com sucesso (HTTP 400).');
+    console.log('  ✓ Proposta com valor negativo bloqueada com sucesso (HTTP 400).');
 
-    // Teste 6: Prestador Envia Proposta Válida
-    console.log('• Teste 6: POST /api/ordens/:id/propostas (Envio de Proposta Válida)');
+    // Teste 7: Prestador Envia Proposta Válida
+    console.log('• Teste 7: POST /api/ordens/:id/propostas (Registro de Proposta Válida)');
     const resProp = await fetch(`${baseUrl}/ordens/${novaOrdemId}/propostas`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -87,8 +99,8 @@ async function runTests() {
     const propostaId = dataProp.proposta_id;
     console.log(`  ✓ Proposta #${propostaId} registrada com sucesso.`);
 
-    // Teste 7: Checkout com Retenção dos Fundos em Custódia (Escrow)
-    console.log('• Teste 7: POST /api/ordens/:id/checkout (Retenção em Escrow)');
+    // Teste 8: Checkout com Retenção dos Fundos em Custódia (Escrow)
+    console.log('• Teste 8: POST /api/ordens/:id/checkout (Bloqueio Transacional em Escrow)');
     const resCheckout = await fetch(`${baseUrl}/ordens/${novaOrdemId}/checkout`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -104,8 +116,8 @@ async function runTests() {
     assert.strictEqual(dataCheckout.dados.status, 'EM_CUSTODIA');
     console.log(`  ✓ Valor total R$ ${dataCheckout.dados.valor_total} retido com sucesso na custódia segura.`);
 
-    // Teste 8: Segurança - Proteção Anti Double-Spending
-    console.log('• Teste 8: POST /api/ordens/:id/checkout (Proteção Anti Double-Spending)');
+    // Teste 9: Prevenção Anti Double-Spending
+    console.log('• Teste 9: POST /api/ordens/:id/checkout (Proteção Anti Double-Spending)');
     const resCheckoutDuplicado = await fetch(`${baseUrl}/ordens/${novaOrdemId}/checkout`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -117,47 +129,66 @@ async function runTests() {
     assert.strictEqual(resCheckoutDuplicado.status, 400);
     console.log('  ✓ Tentativa de pagamento duplo bloqueada com sucesso (HTTP 400).');
 
-    // Teste 9: Prestador Atualiza Status de Execução
-    console.log('• Teste 9: PATCH /api/ordens/:id/status (Avanço da Execução)');
-    const resStatus = await fetch(`${baseUrl}/ordens/${novaOrdemId}/status`, {
+    // Teste 10: Bloqueio de Aprovação Imatura em EM_EXECUCAO
+    console.log('• Teste 10: POST /api/ordens/:id/aprovar (Bloqueio de Aprovação em EM_EXECUCAO)');
+    // Avança para EM_EXECUCAO primeiro
+    await fetch(`${baseUrl}/ordens/${novaOrdemId}/status`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        novo_status: 'AGUARDANDO_VISTORIA',
-        foto_conclusao: 'https://images.unsplash.com/photo-exemplo'
-      })
+      body: JSON.stringify({ novo_status: 'EM_EXECUCAO' })
     });
-    assert.strictEqual(resStatus.status, 200);
-    console.log('  ✓ Ordem avançada para AGUARDANDO_VISTORIA.');
+    const resAprovarImaturo = await fetch(`${baseUrl}/ordens/${novaOrdemId}/aprovar`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ cliente_id: 1, nota: 5, comentario: 'Tentando aprovar antes da vistoria' })
+    });
+    assert.strictEqual(resAprovarImaturo.status, 400);
+    console.log('  ✓ Tentativa de liberação de repasse durante EM_EXECUCAO bloqueada (HTTP 400).');
 
-    // Teste 10: Cliente Realiza Vistoria e Aprova Conclusão
-    console.log('• Teste 10: POST /api/ordens/:id/aprovar (Aprovação e Repasse)');
+    // Teste 11: Bloqueio de Aprovação por Não-Titular (Controle de Acesso 403)
+    console.log('• Teste 11: POST /api/ordens/:id/aprovar (Validação de Titularidade - HTTP 403)');
+    // Avança para AGUARDANDO_VISTORIA
+    await fetch(`${baseUrl}/ordens/${novaOrdemId}/status`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ novo_status: 'AGUARDANDO_VISTORIA', foto_conclusao: 'https://images.unsplash.com/foto-vistoria' })
+    });
+    const resAprovarNaoTitular = await fetch(`${baseUrl}/ordens/${novaOrdemId}/aprovar`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ cliente_id: 999, nota: 5, comentario: 'Tentativa por usuário não-titular' })
+    });
+    assert.strictEqual(resAprovarNaoTitular.status, 403);
+    console.log('  ✓ Tentativa de aprovação por usuário não-titular rejeitada com HTTP 403 Forbidden.');
+
+    // Teste 12: Homologação Legítima da Vistoria pelo Cliente Titular
+    console.log('• Teste 12: POST /api/ordens/:id/aprovar (Homologação Legítima e Repasse)');
     const resAprovar = await fetch(`${baseUrl}/ordens/${novaOrdemId}/aprovar`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         cliente_id: 1,
         nota: 5,
-        comentario: 'Pintura impecável, local limpo e serviço entregue antes do prazo!'
+        comentario: 'Pintura impecável, local limpo e serviço entregue com excelência!'
       })
     });
     assert.strictEqual(resAprovar.status, 200);
     const dataAprovar = await resAprovar.json();
     assert.strictEqual(dataAprovar.sucesso, true);
     assert.strictEqual(dataAprovar.status, 'CONCLUIDO');
-    console.log(`  ✓ Vistoria aprovada! R$ ${dataAprovar.valor_liberado} liberados à carteira do prestador.`);
+    console.log(`  ✓ Vistoria homologada! R$ ${dataAprovar.valor_liberado} liberados à carteira do prestador.`);
 
-    // Teste 11: Nova Funcionalidade - Listar Livro-Razão Escrow (Auditoria Transacional)
-    console.log('• Teste 11: GET /api/transacoes (Livro-Razão Escrow)');
+    // Teste 13: Listar Livro-Razão Escrow (Auditoria Contábil)
+    console.log('• Teste 13: GET /api/transacoes (Livro-Razão Escrow Auditável)');
     const resTrx = await fetch(`${baseUrl}/transacoes`);
     assert.strictEqual(resTrx.status, 200);
     const dataTrx = await resTrx.json();
     assert.strictEqual(dataTrx.sucesso, true);
-    assert.ok(dataTrx.dados.length > 0);
+    assert.ok(dataTrx.dados.length >= 2);
     console.log(`  ✓ Total de movimentações auditadas no livro-razão: ${dataTrx.dados.length}`);
 
-    // Teste 12: Nova Funcionalidade - Solicitação de Saque PIX da Carteira
-    console.log('• Teste 12: POST /api/prestador/saque (Resgate PIX da Carteira)');
+    // Teste 14: Resgate via PIX do Saldo Disponível
+    console.log('• Teste 14: POST /api/prestador/saque (Resgate via PIX)');
     const resSaque = await fetch(`${baseUrl}/prestador/saque`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -172,8 +203,31 @@ async function runTests() {
     assert.strictEqual(dataSaque.sucesso, true);
     console.log(`  ✓ Saque PIX processado com sucesso. Novo saldo disponível: R$ ${dataSaque.novo_saldo}`);
 
+    // Teste 15: Notificações Multicanal (WhatsApp & E-mail)
+    console.log('• Teste 15: GET /api/notificacoes (Log Auditável de Mensageria)');
+    const resNotif = await fetch(`${baseUrl}/notificacoes`);
+    assert.strictEqual(resNotif.status, 200);
+    const dataNotif = await resNotif.json();
+    assert.strictEqual(dataNotif.sucesso, true);
+    assert.ok(dataNotif.dados.length > 0);
+    console.log(`  ✓ Log de mensageria ativo com ${dataNotif.dados.length} notificações registradas (WhatsApp/Email).`);
+
+    // Teste 16: Verificação de Integridade Referencial (PRAGMA foreign_keys = ON)
+    console.log('• Teste 16: PRAGMA foreign_keys = ON (Enforcement Estrito de Chaves Estrangeiras)');
+    let fkBloqueada = false;
+    try {
+      db.prepare(`
+        INSERT INTO avaliacoes (ordem_id, avaliador_id, avaliado_id, nota, comentario)
+        VALUES (999999, 1, 2, 5, 'Teste de integridade referencial com OS inexistente')
+      `).run();
+    } catch (err) {
+      fkBloqueada = true;
+    }
+    assert.strictEqual(fkBloqueada, true);
+    console.log('  ✓ Inserção com chave estrangeira inexistente rejeitada pelo SQLite (Integridade ativa).');
+
     console.log('\n======================================================');
-    console.log(' TODOS OS 12 TESTES PASSARAM COM 100% DE SUCESSO!     ');
+    console.log(' TODOS OS 16 TESTES PASSARAM COM 100% DE SUCESSO!     ');
     console.log('======================================================\n');
   } catch (err) {
     console.error('\n❌ FALHA NOS TESTES:', err);
