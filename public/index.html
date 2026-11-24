@@ -106,6 +106,9 @@
         <button class="tab-btn" id="tab-btn-disputas" onclick="trocarAba('disputas')">
           <span>⚖️</span> Mediação & Disputas <span class="tab-badge" id="badge-total-disputas" style="background:#FEE2E2; color:#991B1B;">0</span>
         </button>
+        <button class="tab-btn" id="tab-btn-notificacoes" onclick="trocarAba('notificacoes')">
+          <span>📱</span> Notificações (Zap/Email) <span class="tab-badge" id="badge-total-notificacoes" style="background:#DCFCE7; color:#166534;">0</span>
+        </button>
       </div>
     </div>
 
@@ -287,6 +290,33 @@
 
       <div id="disputas-container" class="orders-grid">
         <!-- Renderizado dinamicamente -->
+      </div>
+    </div>
+
+    <!-- ABA 6: Central de Mensageria & Notificações Multicanal -->
+    <div id="tab-notificacoes" class="tab-content" style="display: none;">
+      <div style="margin-bottom: 20px;">
+        <h2 class="section-title">Central de Mensageria & Notificações Multicanal</h2>
+        <p class="section-desc">Histórico auditável de disparos automáticos de WhatsApp e E-mail transacional para clientes e prestadores.</p>
+      </div>
+
+      <div class="table-container">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Data/Hora</th>
+              <th>Canal</th>
+              <th>Destinatário</th>
+              <th>Usuário</th>
+              <th>Conteúdo da Mensagem</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="notificacoes-tbody">
+            <!-- Renderizado dinamicamente -->
+          </tbody>
+        </table>
       </div>
     </div>
 

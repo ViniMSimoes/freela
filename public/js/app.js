@@ -44,8 +44,16 @@ document.addEventListener('DOMContentLoaded', async () => {
   await carregarEstatisticas();
   await carregarOrdens();
   await carregarTransacoes();
+  await carregarNotificacoes();
   setupEventListeners();
   atualizarEstimativaPreco();
+
+  if (window.location.hash) {
+    const abaHash = window.location.hash.replace('#', '');
+    if (['mural', 'nova', 'escrow', 'carteira', 'disputas', 'notificacoes'].includes(abaHash)) {
+      trocarAba(abaHash);
+    }
+  }
 });
 
 // Carregar Usuários do Sistema
@@ -389,6 +397,55 @@ function trocarAba(aba) {
   if (aba === 'escrow') carregarTransacoes();
   if (aba === 'carteira') { carregarUsuarios(); atualizarCarteiraPrestador(); }
   if (aba === 'disputas') carregarOrdens();
+  if (aba === 'notificacoes') carregarNotificacoes();
+}
+
+// Carregar Histórico de Mensageria (WhatsApp & E-mail)
+async function carregarNotificacoes() {
+  try {
+    const res = await fetch('/api/notificacoes');
+    const json = await res.json();
+    if (json.sucesso) {
+      const badge = document.getElementById('badge-total-notificacoes');
+      if (badge) badge.innerText = json.dados.length;
+      renderizarNotificacoes(json.dados);
+    }
+  } catch (err) {
+    console.error('Erro ao carregar notificações:', err);
+  }
+}
+
+// Renderizar Tabela de Notificações
+function renderizarNotificacoes(lista) {
+  const tbody = document.getElementById('notificacoes-tbody');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+
+  if (!lista || lista.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: #64748B; padding: 24px;">Nenhuma notificação registrada ainda. Realize ações de checkout ou aprovação para disparar avisos.</td></tr>`;
+    return;
+  }
+
+  lista.forEach(n => {
+    const tr = document.createElement('tr');
+    const isZap = n.canal === 'WHATSAPP';
+    const badgeCanal = isZap
+      ? `<span class="badge" style="background: #DCFCE7; color: #166534; font-weight:700;">🟢 WhatsApp</span>`
+      : `<span class="badge" style="background: #E0F2FE; color: #0369A1; font-weight:700;">✉️ E-mail</span>`;
+
+    const dataFormatada = n.criado_em ? new Date(n.criado_em).toLocaleString('pt-BR') : '-';
+
+    tr.innerHTML = `
+      <td style="font-weight: 700;">#${escapeHtml(n.id)}</td>
+      <td style="font-size: 12px; color: #64748B;">${dataFormatada}</td>
+      <td>${badgeCanal}</td>
+      <td style="font-family: monospace; font-size: 12px;">${escapeHtml(n.destinatario)}</td>
+      <td><strong>${escapeHtml(n.usuario_nome || 'Sistema')}</strong></td>
+      <td style="max-width: 320px; font-size: 13px;">${escapeHtml(n.mensagem)}</td>
+      <td><span class="badge badge-concluido">✓ ${escapeHtml(n.status)}</span></td>
+    `;
+    tbody.appendChild(tr);
+  });
 }
 
 // Atualizar Estimador de Preço
