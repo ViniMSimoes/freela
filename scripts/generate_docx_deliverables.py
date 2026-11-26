@@ -697,9 +697,244 @@ def gerar_docx_consolidado():
     doc.save(out_file)
     print("✓ Gerado:", out_file)
 
+# ==========================================
+# 6. CRITÉRIO C5: PLANEJAMENTO DE APIS E CI
+# ==========================================
+def gerar_docx_c5():
+    doc = docx.Document()
+    aplicar_margens_abnt(doc.sections[0])
+    configurar_estilos(doc)
+
+    adicionar_cabecalho_institucional(
+        doc,
+        titulo_documento="Planejamento das APIs e Integração Contínua",
+        subtitulo="Critério C5: Contratos de Entrada/Saída dos Endpoints e Pipeline GitHub Actions"
+    )
+
+    add_heading_1(doc, "1 INTRODUÇÃO E ESCOPO")
+    add_paragraph(doc, "Este documento especifica os contratos dos endpoints principais da API RESTful do FreeLA e descreve a estratégia de Integração Contínua (CI) executada no repositório do projeto.")
+    add_paragraph(doc, "A especificação abrange rotas, métodos HTTP, dados de entrada e saída em formato JSON, códigos de retorno e o workflow automatizado em .github/workflows/ci.yml.")
+
+    add_heading_1(doc, "2 PLANEJAMENTO DOS ENDPOINTS PRINCIPAIS")
+    add_paragraph(doc, "A API opera sob o prefixo /api na porta configurada em .env (padrão 3000). As requisições com corpo utilizam Content-Type: application/json e retornam objetos no formato { sucesso: boolean, mensagem?: string, dados?: object|array }.")
+
+    add_table_caption(doc, "Tabela 1: Especificação dos endpoints principais (método, rota, entrada e saída)")
+    tbl = doc.add_table(rows=1, cols=4)
+    headers = ["Método / Rota", "Dados de Entrada", "Saída de Sucesso", "Erros Previstos"]
+    col_w = [1.7, 1.7, 1.6, 1.3]
+    data = [
+        ["GET /api/ordens", "Query opcional: status, categoria", "200 OK com total e lista de ordens", "400 filtro inválido"],
+        ["POST /api/ordens", "cliente_id, categoria, titulo, descricao, cep, endereco, urgencia", "201 Created com id e status PENDENTE", "400 campos vazios ou inválidos"],
+        ["POST /api/ordens/:id/propostas", "Param id; prestador_id, valor, prazo_estimado, mensagem", "201 Created com proposta_id", "400 valor <= 0"],
+        ["POST /api/ordens/:id/checkout", "Param id; proposta_id, metodo_pagamento, cupom", "200 OK com valores e status EM_CUSTODIA", "400 pagamento duplo"],
+        ["PATCH /api/ordens/:id/status", "Param id; novo_status, foto_conclusao", "200 OK com novo_status", "400 transição inválida"],
+        ["POST /api/ordens/:id/aprovar", "Param id; cliente_id, nota, comentario", "200 OK com valor_liberado e CONCLUIDO", "400 EM_EXECUCAO; 403 não-titular"],
+        ["POST /api/ordens/:id/disputa", "Param id; motivo, detalhes", "200 OK com status EM_DISPUTA", "400 status inválido"],
+        ["POST /api/disputas/:id/resolver", "Param id; decisao, justificativa", "200 OK com status_final", "400 fora de disputa"],
+        ["POST /api/prestador/saque", "prestador_id, valor, chave_pix", "200 OK com novo_saldo", "400 saldo insuficiente"],
+        ["GET /api/transacoes", "Nenhum", "200 OK com livro-razão em dados", "500 erro interno"],
+        ["GET /api/notificacoes", "Nenhum", "200 OK com histórico de mensagens", "500 erro interno"]
+    ]
+    formatar_tabela(tbl, col_w, headers, data)
+    add_source_caption(doc)
+
+    add_heading_2(doc, "2.1 Exemplos de Contratos JSON")
+    add_paragraph(doc, "Criação de Ordem (POST /api/ordens): recebe { cliente_id: 1, categoria: 'Elétrica', titulo: 'Troca de Disjuntor', descricao: '...', cep: '27253-000', endereco: '...', urgencia: 'ALTA' } e retorna 201 Created com { sucesso: true, dados: { id: 4, status: 'PENDENTE' } }.")
+    add_paragraph(doc, "Checkout em Custódia (POST /api/ordens/:id/checkout): recebe { proposta_id: 2, metodo_pagamento: 'PIX', cupom: 'FREELA10' } e retorna 200 OK com { sucesso: true, dados: { status: 'EM_CUSTODIA', valor_mao_obra: 450, taxa_plataforma: 18, valor_total: 468 } }.")
+    add_paragraph(doc, "Aprovação de Vistoria (POST /api/ordens/:id/aprovar): recebe { cliente_id: 1, nota: 5, comentario: 'Serviço concluído.' } e retorna 200 OK com { sucesso: true, valor_liberado: 450, status: 'CONCLUIDO' }. Rejeita ordens em EM_EXECUCAO (HTTP 400) e usuários não-titulares (HTTP 403).")
+
+    add_heading_1(doc, "3 ESTRATÉGIA DE INTEGRAÇÃO CONTÍNUA (CI)")
+    add_paragraph(doc, "A estratégia de Integração Contínua automatiza a instalação, o isolamento do banco de dados e a execução dos 16 testes de integração a cada envio de código ao repositório GitHub.")
+    add_list_item(doc, "1. Gatilho: eventos de push e pull_request direcionados à branch main acionam o arquivo .github/workflows/ci.yml.")
+    add_list_item(doc, "2. Matriz de Execução: o servidor ubuntu-latest executa os testes em duas versões do Node.js (22.x e 24.x).")
+    add_list_item(doc, "3. Instalação Reproduzível: o comando npm ci instala exatamente as dependências travadas em package-lock.json.")
+    add_list_item(doc, "4. Banco Isolado: a pipeline define DB_PATH=./freela_ci_test.db para criar um SQLite limpo do zero com PRAGMA foreign_keys = ON.")
+    add_list_item(doc, "5. Portão de Qualidade: o comando npm test executa os 16 testes. A integração só é aprovada quando o código de saída é 0 em todas as verificações.")
+
+    add_figure(
+        doc,
+        os.path.join(IMG_DIR, "diagrama_ci_cd.png"),
+        caption="Figura 1: Pipeline automatizada de Integração Contínua no GitHub Actions."
+    )
+
+    add_heading_1(doc, "REFERÊNCIAS")
+    add_paragraph(doc, "ASSOCIAÇÃO BRASILEIRA DE NORMAS TÉCNICAS. NBR 6024: Informação e documentação: numeração progressiva das seções de um documento escrito: apresentação. Rio de Janeiro: ABNT, 2012.", indent=False)
+    add_paragraph(doc, "FOWLER, Martin. Continuous Integration. 2006. Disponível em: https://martinfowler.com/articles/continuousIntegration.html. Acesso em: 26 nov. 2026.", indent=False)
+
+    out_file = os.path.join(OUTPUT_DIR, "FreeLA_C5_Planejamento_APIs_e_CI.docx")
+    doc.save(out_file)
+    print("✓ Gerado:", out_file)
+
+# ==========================================
+# 7. CRITÉRIO C6: EVIDÊNCIAS EXTENSIONISTAS
+# ==========================================
+def gerar_docx_c6():
+    doc = docx.Document()
+    aplicar_margens_abnt(doc.sections[0])
+    configurar_estilos(doc)
+
+    adicionar_cabecalho_institucional(
+        doc,
+        titulo_documento="Registro de Evidências Extensionistas",
+        subtitulo="Critério C6: Reuniões com Parceiro, Feedback Recebido e Mudanças Implementadas"
+    )
+
+    add_heading_1(doc, "1 CONTEXTO EXTENSIONISTA")
+    add_paragraph(doc, "O projeto FreeLA atende moradores contratantes e profissionais autônomos de manutenção residencial (eletricistas, encanadores e pintores) do município de Volta Redonda/RJ, no âmbito da disciplina Práticas Extensionistas Integradoras III.")
+    add_paragraph(doc, "O trabalho junto à comunidade teve como foco identificar receios reais na contratação informal de serviços e converter esses apontamentos em melhorias concretas no software.")
+
+    add_heading_1(doc, "2 REGISTRO DAS REUNIÕES COM O PARCEIRO")
+    add_heading_2(doc, "2.1 Reunião 1: Levantamento de Dores e Validação de Fluxo")
+    add_paragraph(doc, "Data: 05 de novembro de 2026. Modalidade: encontro presencial e chamada remota com moradores e dois profissionais autônomos de Volta Redonda/RJ (elétrica e hidráulica), com participação dos integrantes da equipe.")
+    add_paragraph(doc, "Pauta: apresentação do conceito de pagamento em custódia (Escrow), exibição das telas iniciais de solicitação e orçamento, e coleta de dúvidas e sugestões práticas.")
+
+    add_heading_2(doc, "2.2 Reunião 2: Validação do Protótipo Funcional Pós-Ajustes")
+    add_paragraph(doc, "Data: 20 de novembro de 2026. Modalidade: demonstração assistida com o MVP navegável em execução, validando a nova aba Carteira do Prestador (saque PIX), os logs de notificações e a exibição detalhada de taxas.")
+
+    add_heading_1(doc, "3 FEEDBACK RECEBIDO DO PARCEIRO")
+    add_list_item(doc, "1. Comprovação de pagamento retido (Prestadores): os profissionais relataram receio de se deslocar sem garantia e pediram confirmação imediata de que o valor já estava bloqueado na plataforma.")
+    add_list_item(doc, "2. Facilidade de resgate via PIX (Prestadores): os profissionais solicitaram uma área direta para transferir o saldo liberado para sua chave PIX.")
+    add_list_item(doc, "3. Clareza das taxas (Clientes): os moradores pediram separação visível entre o valor da mão de obra e a taxa da plataforma antes do pagamento.")
+    add_list_item(doc, "4. Avisos pelo celular (Clientes e Prestadores): ambos pediram notificações simples enviadas por WhatsApp e e-mail a cada mudança de etapa do serviço.")
+
+    add_heading_1(doc, "4 MUDANÇAS FEITAS NO PROJETO A PARTIR DO FEEDBACK")
+    add_table_caption(doc, "Tabela 1: Relação entre feedback do parceiro e mudanças implementadas no FreeLA")
+    tbl = doc.add_table(rows=1, cols=3)
+    headers = ["Feedback Recebido", "Mudança Implementada no Projeto", "Evidência no Código e Backlog"]
+    col_w = [1.8, 2.3, 2.2]
+    data = [
+        ["Comprovação imediata de saldo retido e avisos no celular", "Criação do serviço de mensageria multicanal (WhatsApp e e-mail) com registro em banco", "src/services/notificationService.js, tabela notificacoes_log, GET /api/notificacoes e Item 18"],
+        ["Facilidade para sacar o dinheiro após o serviço", "Antecipação do saque PIX da Sprint 2 para o MVP e criação da aba Carteira Digital", "escrowService.processarSaque, POST /api/prestador/saque, aba Carteira e Item 10A"],
+        ["Transparência sobre taxas e funcionamento da garantia", "Adição do banner explicativo FreeLA Escrow™ e detalhamento de taxas no checkout", "Banner em public/index.html e resumo financeiro em public/js/app.js"],
+        ["Garantia contra liberação antes da vistoria", "Bloqueio de aprovação enquanto a ordem está em EM_EXECUCAO e checagem de titularidade", "escrowService.liberarRepasse (HTTP 400 e 403), validado nos Testes 10 e 11"]
+    ]
+    formatar_tabela(tbl, col_w, headers, data)
+    add_source_caption(doc)
+
+    add_heading_1(doc, "5 EVIDÊNCIAS VISUAIS DAS ENTREGAS NO SISTEMA")
+    add_figure(doc, os.path.join(IMG_DIR, "print_carteira.png"), "Figura 1: Carteira Digital do Prestador implementada após pedido de saque PIX.")
+    add_figure(doc, os.path.join(IMG_DIR, "print_notificacoes.png"), "Figura 2: Central de Notificações WhatsApp e e-mail implementada após pedido dos usuários.")
+    add_paragraph(doc, "Observação para entrega final: caso a equipe possua fotografias da reunião presencial ou capturas de tela das conversas com os moradores e profissionais, recomenda-se anexá-las ao final deste documento antes do envio no AVA.")
+
+    add_heading_1(doc, "REFERÊNCIAS")
+    add_paragraph(doc, "ASSOCIAÇÃO BRASILEIRA DE NORMAS TÉCNICAS. NBR 6024: Informação e documentação: numeração progressiva das seções de um documento escrito: apresentação. Rio de Janeiro: ABNT, 2012.", indent=False)
+    add_paragraph(doc, "BRASIL. Ministério da Educação. Resolução CNE/CES nº 7, de 18 de dezembro de 2018: Estabelece as Diretrizes para a Extensão na Educação Superior Brasileira. Brasília: MEC, 2018.", indent=False)
+
+    out_file = os.path.join(OUTPUT_DIR, "FreeLA_C6_Evidencias_Extensionistas.docx")
+    doc.save(out_file)
+    print("✓ Gerado:", out_file)
+
+# ==========================================
+# 8. CRITÉRIO C7: APRESENTAÇÃO E DEFESA
+# ==========================================
+def gerar_docx_c7():
+    doc = docx.Document()
+    aplicar_margens_abnt(doc.sections[0])
+    configurar_estilos(doc)
+
+    adicionar_cabecalho_institucional(
+        doc,
+        titulo_documento="Roteiro de Apresentação Final e Defesa Técnica",
+        subtitulo="Critério C7: Divisão de Falas entre os Membros, Demonstração ao Vivo e Perguntas Técnicas"
+    )
+
+    add_heading_1(doc, "1 OBJETIVO DO ROTEIRO")
+    add_paragraph(doc, "Este documento organiza a apresentação final do projeto FreeLA para assegurar exposição clara, demonstração prática do sistema em execução, participação equilibrada de todos os seis integrantes e respostas seguras às perguntas técnicas da banca.")
+
+    add_heading_1(doc, "2 DIVISÃO DA APRESENTAÇÃO POR INTEGRANTE")
+    add_table_caption(doc, "Tabela 1: Divisão de tempo, temas e falas entre os seis membros da equipe")
+    tbl = doc.add_table(rows=1, cols=4)
+    headers = ["Ordem / Membro", "Tempo", "Bloco Temático", "Pontos Obrigatórios da Fala"]
+    col_w = [1.4, 0.7, 1.7, 2.5]
+    data = [
+        ["1. Caio", "2 min", "Problema e Product Backlog (C3)", "Insegurança nas contratações; evolução de 13 para 19 itens (15 concluídos, 78,9%); distinção Item 3 e Item 4."],
+        ["2. Kaique", "2 min", "Evidências Extensionistas (C6)", "Reuniões em Volta Redonda (05/11 e 20/11); demandas dos autônomos e moradores; entregas geradas (saque PIX e avisos)."],
+        ["3. Yago", "2 min", "Banco de Dados e DER (C4)", "6 tabelas em 3FN no SQLite; PRAGMA foreign_keys = ON; FKs em avaliacoes; cardinalidade 1:N mútua; plano PostgreSQL."],
+        ["4. Vinicius M. Simões", "3 min", "Arquitetura, API e Escrow (C2 e C5)", "3 camadas; escrowService.js desacoplado; transações ACID; bloqueio em EM_EXECUCAO; validação de titularidade (HTTP 403)."],
+        ["5. Lucas Augusto", "3 min", "Demonstração ao Vivo (SPA)", "Criar ordem como Cliente, enviar proposta como Prestador, checkout com cupom FREELA10, avançar até vistoria, aprovar e sacar PIX."],
+        ["6. Lucas Gabriel", "2 min", "Testes, Segurança e CI (C1 e C5)", "Rodar npm test ao vivo (16 testes); Helmet e Rate Limit; workflow .github/workflows/ci.yml em Node 22.x e 24.x."]
+    ]
+    formatar_tabela(tbl, col_w, headers, data)
+    add_source_caption(doc)
+
+    add_heading_1(doc, "3 ROTEIRO DA DEMONSTRAÇÃO PRÁTICA")
+    add_list_item(doc, "1. Terminal: executar npm start mostrando carregamento do .env e proteções ativas na porta 3000.")
+    add_list_item(doc, "2. Tela Cliente: abrir http://localhost:3000 e publicar nova solicitação de reparo (status PENDENTE).")
+    add_list_item(doc, "3. Tela Prestador: alternar perfil no cabeçalho e enviar proposta com valor e prazo.")
+    add_list_item(doc, "4. Checkout Escrow: voltar para Cliente, aceitar proposta com cupom FREELA10 e conferir BLOQUEIO_ESCROW no Livro-Razão.")
+    add_list_item(doc, "5. Execução e Vistoria: avançar como Prestador até AGUARDANDO_VISTORIA.")
+    add_list_item(doc, "6. Aprovação e Saque: aprovar como Cliente, conferir saldo disponível na Carteira do Prestador, sacar via PIX e mostrar aba Notificações.")
+    add_list_item(doc, "7. Testes Automatizados: executar npm test exibindo os 16 testes aprovados.")
+
+    add_heading_1(doc, "4 BANCO DE PERGUNTAS E RESPOSTAS TÉCNICAS")
+    add_table_caption(doc, "Tabela 2: Preparação da equipe para arguição técnica")
+    tbl2 = doc.add_table(rows=1, cols=3)
+    headers2 = ["Pergunta Técnica", "Responsável", "Resposta Objetiva"]
+    col_w2 = [1.8, 1.1, 3.4]
+    data2 = [
+        ["Por que o projeto exige Node >= 22.5.0 e exibe aviso experimental?", "Vinicius / Lucas G.", "Usa o módulo nativo node:sqlite incluído a partir do Node 22.5.0. No Node 22 o aviso aparece pelo selo experimental da API nativa, sem prejuízo à execução."],
+        ["Como impedem liberação sem vistoria ou por outro usuário?", "Vinicius", "Em escrowService.js (liberarRepasse), exige-se status AGUARDANDO_VISTORIA (retorna 400 em EM_EXECUCAO) e cliente_id igual ao dono da ordem (retorna 403 se divergir)."],
+        ["Como evitam pagamento duplo no checkout?", "Vinicius / Yago", "O método bloquearCustodia verifica status inicial e executa todas as gravações dentro de BEGIN TRANSACTION e COMMIT/ROLLBACK."],
+        ["Por que usar PRAGMA foreign_keys = ON?", "Yago", "O SQLite desativa chaves estrangeiras por padrão. Ativar a diretiva em connection.js garante rejeição de registros órfãos, comprovada no Teste 16."],
+        ["Por que a avaliação é 1:N e não 1:1?", "Yago / Caio", "O backlog prevê avaliação mútua bilateral (cliente avalia prestador e prestador avalia cliente), gerando até dois registros por ordem."],
+        ["O que muda ao migrar para PostgreSQL 16?", "Yago", "Exige IDENTITY BIGINT nas chaves, BOOLEAN e TIMESTAMPTZ nativos, pool de conexões com pg.Pool e isolamento SERIALIZABLE no escrow."],
+        ["O que mudou após a reunião extensionista?", "Kaique / Caio", "A reunião de 05/11 gerou a entrega do saque PIX no MVP (Item 10A), as notificações WhatsApp/e-mail (Item 18) e o banner explicativo das taxas."],
+        ["Como funciona o CI no GitHub?", "Lucas Gabriel", "O arquivo .github/workflows/ci.yml roda automaticamente a cada push/PR na main, testando npm ci e npm test em Node 22.x e 24.x com banco SQLite limpo."]
+    ]
+    formatar_tabela(tbl2, col_w2, headers2, data2)
+    add_source_caption(doc)
+
+    add_heading_1(doc, "REFERÊNCIAS")
+    add_paragraph(doc, "ASSOCIAÇÃO BRASILEIRA DE NORMAS TÉCNICAS. NBR 6024: Informação e documentação: numeração progressiva das seções de um documento escrito: apresentação. Rio de Janeiro: ABNT, 2012.", indent=False)
+    add_paragraph(doc, "ASSOCIAÇÃO BRASILEIRA DE NORMAS TÉCNICAS. NBR 14724: Informação e documentação: trabalhos acadêmicos: apresentação. Rio de Janeiro: ABNT, 2011.", indent=False)
+
+    out_file = os.path.join(OUTPUT_DIR, "FreeLA_C7_Roteiro_Apresentacao_e_Defesa.docx")
+    doc.save(out_file)
+    print("✓ Gerado:", out_file)
+
+# ==========================================
+# 9. CONSOLIDADO C5 A C7
+# ==========================================
+def gerar_docx_consolidado_c5_c7():
+    doc = docx.Document()
+    aplicar_margens_abnt(doc.sections[0])
+    configurar_estilos(doc)
+
+    adicionar_cabecalho_institucional(
+        doc,
+        titulo_documento="Documentação Técnica Consolidada (Critérios C5 a C7)",
+        subtitulo="Planejamento de APIs e CI, Evidências Extensionistas e Roteiro de Defesa Final"
+    )
+
+    add_heading_1(doc, "1 PLANEJAMENTO DAS APIS E INTEGRAÇÃO CONTÍNUA (CRITÉRIO C5)")
+    add_paragraph(doc, "Os contratos dos 11 endpoints principais definem rotas RESTful sob /api com entradas e saídas em JSON, validação estrita de titularidade (HTTP 403) e bloqueio de aprovação prematura em EM_EXECUCAO (HTTP 400). A estratégia de Integração Contínua opera via .github/workflows/ci.yml, testando automaticamente cada alteração em Node.js 22.x e 24.x sobre banco SQLite isolado.")
+    add_figure(doc, os.path.join(IMG_DIR, "diagrama_ci_cd.png"), "Figura 1: Pipeline de Integração Contínua no GitHub Actions.")
+
+    doc.add_page_break()
+    add_heading_1(doc, "2 EVIDÊNCIAS EXTENSIONISTAS (CRITÉRIO C6)")
+    add_paragraph(doc, "As reuniões de 05/11/2026 e 20/11/2026 com moradores contratantes e prestadores autônomos de Volta Redonda/RJ resultaram em quatro mudanças diretas no sistema: mensageria WhatsApp e e-mail (Item 18), saque PIX antecipado para o MVP (Item 10A), transparência de taxas no checkout e bloqueio de liberação financeira sem vistoria.")
+    add_figure(doc, os.path.join(IMG_DIR, "print_carteira.png"), "Figura 2: Carteira Digital do Prestador com saque PIX.")
+    add_figure(doc, os.path.join(IMG_DIR, "print_notificacoes.png"), "Figura 3: Central de Notificações WhatsApp e e-mail.")
+
+    doc.add_page_break()
+    add_heading_1(doc, "3 APRESENTAÇÃO FINAL E DEFESA TÉCNICA (CRITÉRIO C7)")
+    add_paragraph(doc, "A apresentação final distribui o tempo de forma equilibrada entre os seis integrantes (Caio, Kaique, Yago, Vinicius, Lucas Augusto e Lucas Gabriel), combinando explicação arquitetural, demonstração ao vivo do ciclo completo no navegador, execução dos 16 testes automatizados e preparação técnica para perguntas da banca.")
+
+    add_heading_1(doc, "REFERÊNCIAS")
+    add_paragraph(doc, "ASSOCIAÇÃO BRASILEIRA DE NORMAS TÉCNICAS. NBR 6024: Informação e documentação: numeração progressiva das seções de um documento escrito: apresentação. Rio de Janeiro: ABNT, 2012.", indent=False)
+    add_paragraph(doc, "ASSOCIAÇÃO BRASILEIRA DE NORMAS TÉCNICAS. NBR 14724: Informação e documentação: trabalhos acadêmicos: apresentação. Rio de Janeiro: ABNT, 2011.", indent=False)
+
+    out_file = os.path.join(OUTPUT_DIR, "FreeLA_Documentacao_C5_a_C7.docx")
+    doc.save(out_file)
+    print("✓ Gerado:", out_file)
+
 if __name__ == '__main__':
     gerar_docx_manual_tecnico()
     gerar_docx_backlog()
     gerar_docx_banco_dados()
     gerar_docx_readme()
     gerar_docx_consolidado()
+    gerar_docx_c5()
+    gerar_docx_c6()
+    gerar_docx_c7()
+    gerar_docx_consolidado_c5_c7()
