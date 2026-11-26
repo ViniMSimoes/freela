@@ -18,7 +18,8 @@ app.use(
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
-        scriptSrc: ["'self'", "'unsafe-inline'"], // Permite scripts do SPA
+        scriptSrc: ["'self'", "'unsafe-inline'"],
+        scriptSrcAttr: ["'unsafe-inline'"],
         styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
         imgSrc: ["'self'", "data:", "https:"],
         connectSrc: ["'self'"],
@@ -54,11 +55,14 @@ app.use(cors({
 // Proteção contra Payloads excessivos (Buffer Overflow / Memory Exhaustion)
 app.use(express.json({ limit: '100kb' }));
 
-// Servir arquivos estáticos da pasta pública
+// Servir arquivos estáticos da pasta pública com revalidação imediata
 app.use(express.static(path.join(__dirname, '../public'), {
   dotfiles: 'ignore',
   etag: true,
-  maxAge: '1h'
+  maxAge: 0,
+  setHeaders(res) {
+    res.setHeader('Cache-Control', 'no-cache');
+  }
 }));
 
 // Rotas da API
@@ -69,6 +73,7 @@ app.get('*', (req, res) => {
   if (req.path.startsWith('/api')) {
     return res.status(404).json({ sucesso: false, mensagem: 'Endpoint da API não encontrado.' });
   }
+  res.setHeader('Cache-Control', 'no-cache');
   res.sendFile(path.join(__dirname, '../public/index.html'));
 });
 

@@ -1397,6 +1397,45 @@ textarea.field {
   animation: viewEnter 180ms var(--ease);
 }
 
+.intent-banner {
+  padding: 10px 12px;
+  margin-bottom: 16px;
+  border-radius: var(--r-control);
+  border: 1px solid rgba(180, 83, 9, 0.24);
+  background: var(--accent-tint);
+  color: var(--text-1);
+  font-size: 13px;
+  line-height: 19px;
+}
+
+.form-feedback {
+  padding: 10px 12px;
+  margin-bottom: 14px;
+  border-radius: var(--r-control);
+  font-size: 13px;
+  line-height: 19px;
+  border: 1px solid var(--hairline-strong);
+  background: var(--bg-raised);
+  color: var(--text-1);
+}
+
+.form-feedback.is-error {
+  border-color: rgba(185, 28, 28, 0.28);
+  background: rgba(185, 28, 28, 0.06);
+  color: var(--neg);
+}
+
+.form-feedback.is-success {
+  border-color: rgba(21, 128, 61, 0.28);
+  background: rgba(21, 128, 61, 0.06);
+  color: var(--pos);
+}
+
+.btn:disabled {
+  opacity: 0.56;
+  cursor: default;
+}
+
 @media (max-width: 1024px) {
   .stats-row, .overview-split, .process-layout, .rates-split, .land-section-head, .auth-layout, .app-shell, .two-col-grid, .field-row, .preview-window-grid, .preview-mini-body {
     grid-template-columns: 1fr;

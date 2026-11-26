@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>FreeLA — Custódia financeira para reparos residenciais</title>
-  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/style.css?v=20261126v2">
 </head>
 <body>
 
@@ -14,7 +14,7 @@
   <div id="view-landing" class="landing-root">
     <header class="landing-header">
       <div class="landing-header-inner">
-        <a href="#" class="wordmark">
+        <a href="#top" class="wordmark" data-action="ir-topo">
           <span class="wordmark-glyph" aria-hidden="true">
             <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
               <rect x="2" y="7.5" width="14" height="8.5" rx="2" stroke="currentColor" stroke-width="1.6"/>
@@ -31,9 +31,9 @@
           <a href="#sec-profissionais">Profissionais</a>
         </nav>
 
-        <div class="landing-nav-cta">
-          <button type="button" class="link-quiet" onclick="irParaAuth('login')">Entrar</button>
-          <button type="button" class="btn btn-primary" onclick="irParaAuth('register', 'CLIENTE')">Criar conta</button>
+        <div class="landing-nav-cta" id="landing-header-actions">
+          <button type="button" class="link-quiet" data-action="abrir-auth" data-mode="login" data-role="CLIENTE">Entrar</button>
+          <button type="button" class="btn btn-primary" data-action="abrir-auth" data-mode="register" data-role="CLIENTE">Criar conta</button>
         </div>
       </div>
     </header>
@@ -56,8 +56,8 @@
             Moradores de Volta Redonda contratam eletricistas, encanadores e pintores com valor guardado em custódia e liberado via PIX somente na vistoria presencial
           </p>
           <div class="hero-actions">
-            <button type="button" class="btn btn-primary btn-hero" onclick="irParaAuth('register', 'CLIENTE')">Solicitar reparo</button>
-            <button type="button" class="btn btn-secondary btn-hero" onclick="irParaAuth('register', 'PRESTADOR')">Atuar como prestador</button>
+            <button type="button" class="btn btn-primary btn-hero" data-action="solicitar-orcamento">Solicitar reparo</button>
+            <button type="button" class="btn btn-secondary btn-hero" data-action="abrir-auth" data-mode="register" data-role="PRESTADOR">Atuar como prestador</button>
           </div>
         </div>
 
@@ -91,7 +91,7 @@
             </div>
 
             <div class="preview-mini-body">
-              <div class="stat-card" style="min-height: 152px;">
+              <div class="stat-card has-object" style="min-height: 152px;">
                 <div>
                   <div class="stat-label">Retido em garantia ativa</div>
                   <div class="stat-figure" id="land-kpi-custodia">R$ 590,00</div>
@@ -174,31 +174,31 @@
           <p class="land-section-desc" style="margin-bottom: 24px;">
             Valores de referência levantados junto a profissionais autônomos do Sul Fluminense para orientar seu pedido antes do envio das propostas.
           </p>
-          <button type="button" class="btn btn-primary" style="background: var(--warm-text-1);" onclick="irParaAuth('register', 'CLIENTE')">Abrir chamado gratuito</button>
+          <button type="button" class="btn btn-primary" style="background: var(--warm-text-1);" data-action="solicitar-orcamento">Solicitar orçamento gratuito</button>
         </div>
 
         <div class="rates-list">
-          <div class="rate-row" onclick="irParaAuth('register', 'CLIENTE')">
+          <div class="rate-row" role="button" tabindex="0" data-action="solicitar-orcamento" data-cat="Elétrica">
             <span style="font-weight: 500;">Elétrica</span>
             <span style="font-size: 13px; color: var(--warm-text-2);">Quadros, disjuntores, tomadas e chuveiros</span>
             <span class="mono" style="font-size: 13px;">R$ 180,00 – R$ 380,00</span>
           </div>
-          <div class="rate-row" onclick="irParaAuth('register', 'CLIENTE')">
+          <div class="rate-row" role="button" tabindex="0" data-action="solicitar-orcamento" data-cat="Hidráulica">
             <span style="font-weight: 500;">Hidráulica</span>
             <span style="font-size: 13px; color: var(--warm-text-2);">Vazamentos, sifões, registros e esgoto</span>
             <span class="mono" style="font-size: 13px;">R$ 150,00 – R$ 320,00</span>
           </div>
-          <div class="rate-row" onclick="irParaAuth('register', 'CLIENTE')">
+          <div class="rate-row" role="button" tabindex="0" data-action="solicitar-orcamento" data-cat="Climatização">
             <span style="font-weight: 500;">Climatização</span>
             <span style="font-size: 13px; color: var(--warm-text-2);">Instalação de split, limpeza e carga de gás</span>
             <span class="mono" style="font-size: 13px;">R$ 200,00 – R$ 550,00</span>
           </div>
-          <div class="rate-row" onclick="irParaAuth('register', 'CLIENTE')">
+          <div class="rate-row" role="button" tabindex="0" data-action="solicitar-orcamento" data-cat="Pintura">
             <span style="font-weight: 500;">Pintura</span>
             <span style="font-size: 13px; color: var(--warm-text-2);">Fachadas, massa corrida e impermeabilização</span>
             <span class="mono" style="font-size: 13px;">R$ 350,00 – R$ 950,00</span>
           </div>
-          <div class="rate-row" onclick="irParaAuth('register', 'CLIENTE')">
+          <div class="rate-row" role="button" tabindex="0" data-action="solicitar-orcamento" data-cat="Alvenaria">
             <span style="font-weight: 500;">Alvenaria</span>
             <span style="font-size: 13px; color: var(--warm-text-2);">Pisos, revestimentos, reboco e calçadas</span>
             <span class="mono" style="font-size: 13px;">R$ 300,00 – R$ 1.200,00</span>
@@ -218,8 +218,8 @@
     <footer class="landing-footer">
       <span>FreeLA · Custódia financeira para reparos residenciais · Volta Redonda, RJ</span>
       <div style="display: flex; gap: 20px;">
-        <a href="#" onclick="irParaAuth('login'); return false;">Entrar</a>
-        <a href="#" onclick="irParaAuth('register', 'PRESTADOR'); return false;">Cadastro de prestador</a>
+        <a href="#entrar" data-action="abrir-auth" data-mode="login" data-role="CLIENTE">Entrar</a>
+        <a href="#prestador" data-action="abrir-auth" data-mode="register" data-role="PRESTADOR">Cadastro de prestador</a>
       </div>
     </footer>
   </div>
@@ -230,7 +230,7 @@
   <div id="view-auth" class="auth-layout hidden">
     <aside class="auth-left">
       <div>
-        <a href="#" onclick="mostrarLanding(); return false;" class="wordmark" style="margin-bottom: 56px; display: inline-flex;">
+        <a href="#inicio" data-action="mostrar-landing" class="wordmark" style="margin-bottom: 56px; display: inline-flex;">
           <span class="wordmark-glyph" aria-hidden="true">
             <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
               <rect x="2" y="7.5" width="14" height="8.5" rx="2" stroke="currentColor" stroke-width="1.6"/>
@@ -247,73 +247,55 @@
         </p>
       </div>
 
-      <a href="#" onclick="mostrarLanding(); return false;" style="font-size: 13px; color: #8a847a;">Voltar para o início</a>
+      <a href="#inicio" data-action="mostrar-landing" style="font-size: 13px; color: #8a847a;">Voltar para o início</a>
     </aside>
 
     <main class="auth-right">
       <div class="auth-panel">
+        <div id="auth-intent-banner" class="intent-banner hidden"></div>
+
         <div class="segmented">
-          <button type="button" class="seg-btn active" id="tab-auth-login" onclick="alternarModoAuth('login')">Entrar</button>
-          <button type="button" class="seg-btn" id="tab-auth-register" onclick="alternarModoAuth('register')">Criar conta</button>
+          <button type="button" class="seg-btn active" id="tab-auth-login" data-action="alternar-modo-auth" data-mode="login">Entrar</button>
+          <button type="button" class="seg-btn" id="tab-auth-register" data-action="alternar-modo-auth" data-mode="register">Criar conta</button>
         </div>
 
-        <form id="form-login">
+        <div id="auth-feedback" class="form-feedback hidden" role="alert"></div>
+
+        <form id="form-login" novalidate>
           <div class="field-group">
             <label class="field-label" for="login-email">E-mail</label>
-            <input type="email" id="login-email" class="field" placeholder="nome@email.com" required>
+            <input type="email" id="login-email" class="field" placeholder="nome@email.com" autocomplete="email">
           </div>
           <div class="field-group">
             <label class="field-label" for="login-senha">Senha</label>
-            <input type="password" id="login-senha" class="field" placeholder="Sua senha" required>
+            <input type="password" id="login-senha" class="field" placeholder="Sua senha" autocomplete="current-password">
           </div>
-          <button type="submit" class="btn btn-primary" style="width: 100%;">Acessar painel</button>
-
-          <div class="demo-list">
-            <div class="demo-list-label">Contas de homologação (acesso direto)</div>
-            <div class="demo-grid">
-              <button type="button" class="demo-btn" onclick="loginRapidoDemo('maria.cliente@email.com')">
-                <span class="demo-btn-name">Maria Santos</span>
-                <span class="demo-btn-role">Cliente residencial</span>
-              </button>
-              <button type="button" class="demo-btn" onclick="loginRapidoDemo('carlos.eletrica@email.com')">
-                <span class="demo-btn-name">Carlos Silva</span>
-                <span class="demo-btn-role">Prestador · Elétrica</span>
-              </button>
-              <button type="button" class="demo-btn" onclick="loginRapidoDemo('roberto.hidraulica@email.com')">
-                <span class="demo-btn-name">Roberto Souza</span>
-                <span class="demo-btn-role">Prestador · Hidráulica</span>
-              </button>
-              <button type="button" class="demo-btn" onclick="loginRapidoDemo('admin@freela.com.br')">
-                <span class="demo-btn-name">Administração</span>
-                <span class="demo-btn-role">Mediação e suporte</span>
-              </button>
-            </div>
-          </div>
+          <button type="submit" class="btn btn-primary" id="btn-submit-login" style="width: 100%;">Acessar painel</button>
         </form>
 
-        <form id="form-register" class="hidden">
+        <form id="form-register" class="hidden" novalidate>
           <div class="field-group">
             <label class="field-label">Perfil de uso</label>
             <div class="segmented" style="margin-bottom: 0;">
-              <button type="button" class="seg-btn active" id="opt-role-cliente" onclick="selecionarPapelCadastro('CLIENTE')">Cliente</button>
-              <button type="button" class="seg-btn" id="opt-role-prestador" onclick="selecionarPapelCadastro('PRESTADOR')">Prestador</button>
+              <button type="button" class="seg-btn active" id="opt-role-cliente" data-action="selecionar-papel" data-role="CLIENTE">Cliente</button>
+              <button type="button" class="seg-btn" id="opt-role-prestador" data-action="selecionar-papel" data-role="PRESTADOR">Prestador</button>
             </div>
             <input type="hidden" id="reg-papel" value="CLIENTE">
           </div>
 
           <div class="field-group">
             <label class="field-label" for="reg-nome">Nome completo</label>
-            <input type="text" id="reg-nome" class="field" placeholder="Nome e sobrenome" required maxlength="100">
+            <input type="text" id="reg-nome" class="field" placeholder="Nome e sobrenome" maxlength="100" autocomplete="name">
           </div>
 
           <div class="field-row">
             <div class="field-group">
               <label class="field-label" for="reg-email">E-mail</label>
-              <input type="email" id="reg-email" class="field" placeholder="nome@email.com" required>
+              <input type="email" id="reg-email" class="field" placeholder="nome@email.com" autocomplete="email">
             </div>
             <div class="field-group">
               <label class="field-label" for="reg-telefone">WhatsApp</label>
-              <input type="text" id="reg-telefone" class="field" placeholder="(24) 99999-0000" required maxlength="20">
+              <input type="text" id="reg-telefone" class="field" placeholder="(24) 99999-0000" maxlength="20" autocomplete="tel">
             </div>
           </div>
 
@@ -330,11 +312,33 @@
 
           <div class="field-group">
             <label class="field-label" for="reg-senha">Senha</label>
-            <input type="password" id="reg-senha" class="field" placeholder="Mínimo de 6 caracteres" required minlength="6">
+            <input type="password" id="reg-senha" class="field" placeholder="Mínimo de 6 caracteres" minlength="6" autocomplete="new-password">
           </div>
 
-          <button type="submit" class="btn btn-primary" style="width: 100%;">Criar conta</button>
+          <button type="submit" class="btn btn-primary" id="btn-submit-register" style="width: 100%;">Criar conta</button>
         </form>
+
+        <div class="demo-list">
+          <div class="demo-list-label">Contas de homologação (acesso direto)</div>
+          <div class="demo-grid">
+            <button type="button" class="demo-btn" data-action="login-demo" data-email="maria.cliente@email.com">
+              <span class="demo-btn-name">Maria Santos</span>
+              <span class="demo-btn-role">Cliente residencial</span>
+            </button>
+            <button type="button" class="demo-btn" data-action="login-demo" data-email="carlos.eletrica@email.com">
+              <span class="demo-btn-name">Carlos Silva</span>
+              <span class="demo-btn-role">Prestador · Elétrica</span>
+            </button>
+            <button type="button" class="demo-btn" data-action="login-demo" data-email="roberto.hidraulica@email.com">
+              <span class="demo-btn-name">Roberto Souza</span>
+              <span class="demo-btn-role">Prestador · Hidráulica</span>
+            </button>
+            <button type="button" class="demo-btn" data-action="login-demo" data-email="admin@freela.com.br">
+              <span class="demo-btn-name">Administração</span>
+              <span class="demo-btn-role">Mediação e suporte</span>
+            </button>
+          </div>
+        </div>
       </div>
     </main>
   </div>
@@ -346,7 +350,7 @@
     <aside class="sidebar">
       <div>
         <div class="sidebar-head">
-          <div class="wordmark">
+          <div class="wordmark" style="cursor: pointer;" data-action="navegar-app" data-page="overview">
             <span class="wordmark-glyph" aria-hidden="true">
               <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
                 <rect x="2" y="7.5" width="14" height="8.5" rx="2" stroke="currentColor" stroke-width="1.6"/>
@@ -358,7 +362,7 @@
           </div>
         </div>
 
-        <div class="sidebar-search" onclick="navegarApp('mural'); setTimeout(()=>document.getElementById('filtro-busca').focus(), 60)">
+        <div class="sidebar-search" role="button" tabindex="0" data-action="buscar-global">
           <svg class="ico" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
           <span>Buscar</span>
           <kbd>Ctrl</kbd><kbd>K</kbd>
@@ -379,7 +383,7 @@
             <span class="account-role" id="sb-user-role">Cliente</span>
           </div>
         </div>
-        <button type="button" class="btn btn-secondary btn-sm" style="width: 100%;" onclick="encerrarSessao()">
+        <button type="button" class="btn btn-secondary btn-sm" style="width: 100%;" data-action="encerrar-sessao">
           <svg class="ico" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
           Encerrar sessão
         </button>
@@ -426,7 +430,7 @@
             <div class="card-surface">
               <div class="card-head">
                 <span class="card-title">Chamados recentes</span>
-                <button type="button" class="link-quiet" style="font-size: 13px;" onclick="navegarApp('mural')">Ver todos</button>
+                <button type="button" class="link-quiet" style="font-size: 13px;" data-action="navegar-app" data-page="mural">Ver todos</button>
               </div>
               <div class="compact-order-list" id="overview-orders-list"></div>
             </div>
@@ -468,11 +472,13 @@
               <div style="font-size: 13px; color: var(--text-2); margin-top: 2px;" id="estimator-text"></div>
             </div>
 
-            <form id="form-nova-solicitacao">
+            <div id="nova-ordem-feedback" class="form-feedback hidden" role="alert"></div>
+
+            <form id="form-nova-solicitacao" novalidate>
               <div class="field-row">
                 <div class="field-group">
                   <label class="field-label" for="select-categoria">Especialidade</label>
-                  <select id="select-categoria" class="field" required>
+                  <select id="select-categoria" class="field">
                     <option value="Elétrica">Elétrica</option>
                     <option value="Hidráulica">Hidráulica</option>
                     <option value="Pintura">Pintura</option>
@@ -482,7 +488,7 @@
                 </div>
                 <div class="field-group">
                   <label class="field-label" for="select-urgencia">Prioridade</label>
-                  <select id="select-urgencia" class="field" required>
+                  <select id="select-urgencia" class="field">
                     <option value="BAIXA">Baixa</option>
                     <option value="MEDIA" selected>Média</option>
                     <option value="ALTA">Alta</option>
@@ -493,28 +499,28 @@
 
               <div class="field-group">
                 <label class="field-label" for="input-titulo">Resumo do reparo</label>
-                <input type="text" id="input-titulo" class="field" placeholder="Ex: Troca de disjuntor geral no quadro interno" required maxlength="140">
+                <input type="text" id="input-titulo" class="field" placeholder="Ex: Troca de disjuntor geral no quadro interno" minlength="5" maxlength="140">
               </div>
 
               <div class="field-group">
                 <label class="field-label" for="input-descricao">Descrição detalhada</label>
-                <textarea id="input-descricao" class="field" rows="4" placeholder="Relate o defeito observado, cômodo e disponibilidade de horário" required maxlength="800"></textarea>
+                <textarea id="input-descricao" class="field" rows="4" placeholder="Relate o defeito observado, cômodo e disponibilidade de horário (mínimo de 10 caracteres)" minlength="10" maxlength="800"></textarea>
               </div>
 
               <div class="field-row">
                 <div class="field-group">
                   <label class="field-label" for="input-cep">CEP</label>
-                  <input type="text" id="input-cep" class="field mono" placeholder="27255-000" required maxlength="10">
+                  <input type="text" id="input-cep" class="field mono" placeholder="27255-000" maxlength="10">
                 </div>
                 <div class="field-group">
                   <label class="field-label" for="input-endereco">Endereço</label>
-                  <input type="text" id="input-endereco" class="field" placeholder="Rua 16, nº 220, Vila Santa Cecília, Volta Redonda/RJ" required maxlength="200">
+                  <input type="text" id="input-endereco" class="field" placeholder="Rua 16, nº 220, Vila Santa Cecília, Volta Redonda/RJ" maxlength="200">
                 </div>
               </div>
 
               <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px;">
-                <button type="button" class="btn btn-secondary" onclick="navegarApp('mural')">Cancelar</button>
-                <button type="submit" class="btn btn-primary">Publicar chamado</button>
+                <button type="button" class="btn btn-secondary" data-action="navegar-app" data-page="mural">Cancelar</button>
+                <button type="submit" class="btn btn-primary" id="btn-submit-nova-ordem">Publicar chamado</button>
               </div>
             </form>
           </div>
@@ -690,13 +696,13 @@
   </div>
 
   <!-- MODAL -->
-  <div id="modal" class="modal-overlay hidden" onclick="if(event.target===this) fecharModal()">
+  <div id="modal" class="modal-overlay hidden" data-action="fechar-modal-backdrop">
     <div class="modal-panel" id="modal-body"></div>
   </div>
 
   <!-- TOAST -->
   <div id="toast-region" class="toast-region"></div>
 
-  <script src="/js/app.js"></script>
+  <script src="/js/app.js?v=20261126v2"></script>
 </body>
 </html>

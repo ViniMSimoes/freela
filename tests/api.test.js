@@ -371,8 +371,33 @@ async function runTests() {
     assert.ok(dataAvList.dados.length >= 2);
     console.log(`  ✓ Total de avaliações mútuas consultadas: ${dataAvList.dados.length}.`);
 
+    // Teste 25: Integridade do Frontend SPA (CSP, Cache-Control e Delegação de Eventos)
+    console.log('• Teste 25: Integridade do Frontend SPA (CSP, Cache-Control e Delegação de Ações)');
+    const resIndex = await fetch(`http://localhost:${PORT}/`);
+    assert.strictEqual(resIndex.status, 200);
+    assert.strictEqual(resIndex.headers.get('cache-control'), 'no-cache');
+    const cspHeader = resIndex.headers.get('content-security-policy') || '';
+    assert.ok(cspHeader.includes("script-src-attr 'unsafe-inline'"));
+
+    const htmlSrc = fs.readFileSync(path.resolve(__dirname, '../public/index.html'), 'utf8');
+    const jsSrc = fs.readFileSync(path.resolve(__dirname, '../public/js/app.js'), 'utf8');
+    assert.strictEqual(/\bonclick\s*=/i.test(htmlSrc), false, 'index.html deve usar data-action sem onclick inline');
+    assert.strictEqual(/\bonclick\s*=/i.test(jsSrc), false, 'app.js deve usar data-action sem onclick inline');
+    assert.strictEqual(/\boninput\s*=/i.test(jsSrc), false, 'app.js deve usar data-input-action sem oninput inline');
+
+    const actionsUsadas = new Set();
+    for (const src of [htmlSrc, jsSrc]) {
+      for (const m of src.matchAll(/data-action="([^"]+)"/g)) {
+        if (m[1] !== 'fechar-modal-backdrop') actionsUsadas.add(m[1]);
+      }
+    }
+    for (const act of actionsUsadas) {
+      assert.ok(jsSrc.includes(`case '${act}':`), `Ação data-action="${act}" mapeada no delegador`);
+    }
+    console.log(`  ✓ ${actionsUsadas.size} ações de interface verificadas sem conflito com CSP.`);
+
     console.log('\n======================================================');
-    console.log(' TODOS OS 24 TESTES PASSARAM COM 100% DE SUCESSO!     ');
+    console.log(' TODOS OS 25 TESTES PASSARAM COM 100% DE SUCESSO!     ');
     console.log('======================================================\n');
   } catch (err) {
     console.error('\n❌ FALHA NOS TESTES:', err);
