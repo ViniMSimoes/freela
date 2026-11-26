@@ -1,6 +1,7 @@
 const db = require('../database/connection');
 const escrowService = require('../services/escrowService');
 const notificationService = require('../services/notificationService');
+const { extrairUsuarioAutenticado } = require('./platformController');
 
 // Whitelists para validação estrita (OWASP Input Validation)
 const CATEGORIAS_VALIDAS = ['Elétrica', 'Hidráulica', 'Pintura', 'Alvenaria', 'Climatização'];
@@ -50,22 +51,31 @@ exports.listarOrdens = (req, res) => {
       params.push(categoria);
     }
 
-    if (cliente_id) {
-      const cId = parseInt(cliente_id, 10);
-      if (isNaN(cId) || cId <= 0) {
-        return res.status(400).json({ sucesso: false, mensagem: 'ID de cliente inválido.' });
-      }
+    const userAuth = extrairUsuarioAutenticado(req);
+    if (userAuth && userAuth.papel === 'CLIENTE') {
       sql += ` AND o.cliente_id = ?`;
-      params.push(cId);
-    }
-
-    if (prestador_id) {
-      const pId = parseInt(prestador_id, 10);
-      if (isNaN(pId) || pId <= 0) {
-        return res.status(400).json({ sucesso: false, mensagem: 'ID de prestador inválido.' });
-      }
+      params.push(userAuth.id);
+    } else if (userAuth && userAuth.papel === 'PRESTADOR') {
       sql += ` AND (o.prestador_id = ? OR (o.status IN ('PENDENTE', 'PROPOSTA_RECEBIDA') AND o.prestador_id IS NULL))`;
-      params.push(pId);
+      params.push(userAuth.id);
+    } else {
+      if (cliente_id) {
+        const cId = parseInt(cliente_id, 10);
+        if (isNaN(cId) || cId <= 0) {
+          return res.status(400).json({ sucesso: false, mensagem: 'ID de cliente inválido.' });
+        }
+        sql += ` AND o.cliente_id = ?`;
+        params.push(cId);
+      }
+
+      if (prestador_id) {
+        const pId = parseInt(prestador_id, 10);
+        if (isNaN(pId) || pId <= 0) {
+          return res.status(400).json({ sucesso: false, mensagem: 'ID de prestador inválido.' });
+        }
+        sql += ` AND (o.prestador_id = ? OR (o.status IN ('PENDENTE', 'PROPOSTA_RECEBIDA') AND o.prestador_id IS NULL))`;
+        params.push(pId);
+      }
     }
 
     sql += ` ORDER BY o.id DESC`;
@@ -104,6 +114,16 @@ exports.obterOrdem = (req, res) => {
 
     if (!ordem) {
       return res.status(404).json({ sucesso: false, mensagem: 'Ordem de serviço não encontrada.' });
+    }
+
+    const userAuth = extrairUsuarioAutenticado(req);
+    if (userAuth) {
+      if (userAuth.papel === 'CLIENTE' && ordem.cliente_id !== userAuth.id) {
+        return res.status(403).json({ sucesso: false, mensagem: 'Acesso restrito ao titular deste chamado.' });
+      }
+      if (userAuth.papel === 'PRESTADOR' && ordem.prestador_id && ordem.prestador_id !== userAuth.id) {
+        return res.status(403).json({ sucesso: false, mensagem: 'Este chamado pertence a outro prestador.' });
+      }
     }
 
     const propostas = db.prepare(`
@@ -229,6 +249,16 @@ exports.enviarProposta = (req, res) => {
       return res.status(404).json({ sucesso: false, mensagem: 'Ordem de serviço não encontrada.' });
     }
 
+    const userAuth = extrairUsuarioAutenticado(req);
+    if (userAuth) {
+      if (userAuth.papel === 'CLIENTE' && ordem.cliente_id !== userAuth.id) {
+        return res.status(403).json({ sucesso: false, mensagem: 'Acesso restrito ao titular deste chamado.' });
+      }
+      if (userAuth.papel === 'PRESTADOR' && ordem.prestador_id && ordem.prestador_id !== userAuth.id) {
+        return res.status(403).json({ sucesso: false, mensagem: 'Este chamado pertence a outro prestador.' });
+      }
+    }
+
     if (ordem.status !== 'PENDENTE' && ordem.status !== 'PROPOSTA_RECEBIDA') {
       return res.status(400).json({
         sucesso: false,
@@ -309,6 +339,16 @@ exports.atualizarStatus = (req, res) => {
       return res.status(404).json({ sucesso: false, mensagem: 'Ordem de serviço não encontrada.' });
     }
 
+    const userAuth = extrairUsuarioAutenticado(req);
+    if (userAuth) {
+      if (userAuth.papel === 'CLIENTE' && ordem.cliente_id !== userAuth.id) {
+        return res.status(403).json({ sucesso: false, mensagem: 'Acesso restrito ao titular deste chamado.' });
+      }
+      if (userAuth.papel === 'PRESTADOR' && ordem.prestador_id && ordem.prestador_id !== userAuth.id) {
+        return res.status(403).json({ sucesso: false, mensagem: 'Este chamado pertence a outro prestador.' });
+      }
+    }
+
     // A ordem precisa estar em custódia ou em andamento
     const estadosOperaveis = ['EM_CUSTODIA', 'A_CAMINHO', 'EM_EXECUCAO'];
     if (!estadosOperaveis.includes(ordem.status)) {
@@ -381,6 +421,16 @@ exports.abrirDisputa = (req, res) => {
       return res.status(404).json({ sucesso: false, mensagem: 'Ordem de serviço não encontrada.' });
     }
 
+    const userAuth = extrairUsuarioAutenticado(req);
+    if (userAuth) {
+      if (userAuth.papel === 'CLIENTE' && ordem.cliente_id !== userAuth.id) {
+        return res.status(403).json({ sucesso: false, mensagem: 'Acesso restrito ao titular deste chamado.' });
+      }
+      if (userAuth.papel === 'PRESTADOR' && ordem.prestador_id && ordem.prestador_id !== userAuth.id) {
+        return res.status(403).json({ sucesso: false, mensagem: 'Este chamado pertence a outro prestador.' });
+      }
+    }
+
     // Apenas ordens ativas com fundos em custódia podem ser contestadas
     const estadosDisputaveis = ['EM_CUSTODIA', 'A_CAMINHO', 'EM_EXECUCAO', 'AGUARDANDO_VISTORIA'];
     if (!estadosDisputaveis.includes(ordem.status)) {
@@ -451,18 +501,29 @@ exports.listarUsuarios = (req, res) => {
   }
 };
 
-// 11. Listar Livro-Razão de Custódia (Transações Escrow)
+// 11. Listar Livro-Razão de Custódia (Transações Escrow isoladas por titularidade)
 exports.listarTransacoes = (req, res) => {
   try {
-    const sql = `
+    const userAuth = extrairUsuarioAutenticado(req);
+    let sql = `
       SELECT t.*, o.titulo as ordem_titulo, o.categoria, c.nome as cliente_nome, p.nome as prestador_nome
       FROM transacoes_custodia t
       JOIN ordens_servico o ON t.ordem_id = o.id
       JOIN usuarios c ON o.cliente_id = c.id
       LEFT JOIN usuarios p ON o.prestador_id = p.id
-      ORDER BY t.id DESC
     `;
-    const transacoes = db.prepare(sql).all();
+    const params = [];
+
+    if (userAuth && userAuth.papel === 'CLIENTE') {
+      sql += ` WHERE o.cliente_id = ?`;
+      params.push(userAuth.id);
+    } else if (userAuth && userAuth.papel === 'PRESTADOR') {
+      sql += ` WHERE o.prestador_id = ?`;
+      params.push(userAuth.id);
+    }
+
+    sql += ` ORDER BY t.id DESC`;
+    const transacoes = db.prepare(sql).all(...params);
     res.json({ sucesso: true, dados: transacoes });
   } catch (error) {
     console.error('[ERRO listarTransacoes]:', error);
@@ -516,10 +577,12 @@ exports.resolverDisputa = (req, res) => {
   }
 };
 
-// 14. Listar Histórico de Notificações Multicanal (WhatsApp & E-mail)
+// 14. Listar Histórico de Notificações Multicanal (WhatsApp & E-mail isolado por conta)
 exports.listarNotificacoes = (req, res) => {
   try {
-    const notificacoes = notificationService.listarNotificacoesRecentes();
+    const userAuth = extrairUsuarioAutenticado(req);
+    const filtroUsuario = userAuth && userAuth.papel !== 'ADMIN' ? userAuth.id : null;
+    const notificacoes = notificationService.listarNotificacoesRecentes(filtroUsuario);
     res.json({ sucesso: true, dados: notificacoes });
   } catch (error) {
     console.error('[ERRO listarNotificacoes]:', error);

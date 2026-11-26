@@ -63,6 +63,8 @@ function verificarAdmin(adminId) {
   return user;
 }
 
+exports.extrairUsuarioAutenticado = extrairUsuarioAutenticado;
+
 // 1. Cadastro de Usuário (Item 11: inicia com verificado = 0)
 exports.registrarUsuario = (req, res) => {
   try {

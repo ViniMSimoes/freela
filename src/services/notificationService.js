@@ -88,9 +88,19 @@ class NotificationService {
   }
 
   /**
-   * Listar histórico recente de notificações para o frontend
+   * Listar histórico recente de notificações para o frontend (isolado por usuário quando informado)
    */
-  listarNotificacoesRecentes() {
+  listarNotificacoesRecentes(usuarioId = null) {
+    if (usuarioId !== null && usuarioId !== undefined) {
+      return db.prepare(`
+        SELECT n.*, u.nome as usuario_nome
+        FROM notificacoes_log n
+        LEFT JOIN usuarios u ON n.usuario_id = u.id
+        WHERE n.usuario_id = ?
+        ORDER BY n.id DESC
+        LIMIT 20
+      `).all(usuarioId);
+    }
     return db.prepare(`
       SELECT n.*, u.nome as usuario_nome
       FROM notificacoes_log n

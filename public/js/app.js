@@ -588,14 +588,15 @@ async function iniciarWorkspace(paginaInicial = 'overview') {
 
 async function sincronizarDadosBase() {
   try {
+    const hdr = { headers: authHeaders() };
     const [rStats, rOrdens, rUsers, rTrx, rNotif, rPrest, rCup] = await Promise.all([
-      fetch('/api/stats'),
-      fetch('/api/ordens'),
-      fetch('/api/usuarios'),
-      fetch('/api/transacoes'),
-      fetch('/api/notificacoes'),
-      fetch('/api/prestadores'),
-      fetch('/api/cupons')
+      fetch('/api/stats', hdr),
+      fetch('/api/ordens', hdr),
+      fetch('/api/usuarios', hdr),
+      fetch('/api/transacoes', hdr),
+      fetch('/api/notificacoes', hdr),
+      fetch('/api/prestadores', hdr),
+      fetch('/api/cupons', hdr)
     ]);
 
     const [jStats, jOrdens, jUsers, jTrx, jNotif, jPrest, jCup] = await Promise.all([
@@ -631,13 +632,31 @@ function atualizarResumoUsuarioSidebar() {
   document.getElementById('sb-user-role').textContent = mapPapel[state.user.papel] || state.user.papel;
 }
 
+function obterOrdensDoUsuarioAtual() {
+  if (!state.user) return [];
+  if (state.user.papel === 'CLIENTE') {
+    return state.ordens.filter(o => o.cliente_id === state.user.id);
+  }
+  if (state.user.papel === 'PRESTADOR') {
+    return state.ordens.filter(o => o.prestador_id === state.user.id);
+  }
+  return state.ordens;
+}
+
 function renderizarSidebar() {
   const papel = state.user ? state.user.papel : 'CLIENTE';
-  const disputasCount = state.ordens.filter(o => o.status === 'EM_DISPUTA').length;
+  const ordensProprias = obterOrdensDoUsuarioAtual();
+  const contagemMural = papel === 'CLIENTE' ? ordensProprias.length : state.ordens.length;
+  const disputasCount = ordensProprias.filter(o => o.status === 'EM_DISPUTA').length;
 
   const itensPrincipais = [
     { id: 'overview', label: 'Visão geral', icon: ICONS.overview },
-    { id: 'mural', label: papel === 'PRESTADOR' ? 'Mural de chamados' : 'Ordens de serviço', icon: ICONS.mural, count: state.ordens.length }
+    {
+      id: 'mural',
+      label: papel === 'PRESTADOR' ? 'Mural de chamados' : 'Ordens de serviço',
+      icon: ICONS.mural,
+      count: contagemMural || null
+    }
   ];
 
   if (papel === 'CLIENTE') {
@@ -652,9 +671,9 @@ function renderizarSidebar() {
   }
 
   const itensSecundarios = [
-    { id: 'escrow', label: 'Livro-razão escrow', icon: ICONS.escrow, count: state.transacoes.length },
+    { id: 'escrow', label: 'Livro-razão escrow', icon: ICONS.escrow, count: state.transacoes.length || null },
     { id: 'disputas', label: 'Disputas', icon: ICONS.disputas, count: disputasCount || null },
-    { id: 'notificacoes', label: 'Notificações', icon: ICONS.notificacoes, count: state.notificacoes.length },
+    { id: 'notificacoes', label: 'Notificações', icon: ICONS.notificacoes, count: state.notificacoes.length || null },
     { id: 'perfil', label: 'Minha conta', icon: ICONS.perfil }
   ];
 
@@ -677,7 +696,10 @@ async function navegarApp(pagina) {
   const alvo = document.getElementById(`sec-${pagina}`);
   if (alvo) alvo.classList.remove('hidden');
 
-  const meta = PAGE_TITLES[pagina] || PAGE_TITLES.overview;
+  let meta = PAGE_TITLES[pagina] || PAGE_TITLES.overview;
+  if (pagina === 'prestadores' && state.user && state.user.papel === 'PRESTADOR') {
+    meta = { crumb: 'Meu portfólio', title: 'Meu portfólio', sub: '' };
+  }
   document.getElementById('page-breadcrumb').textContent = meta.crumb;
   document.getElementById('page-title').textContent = meta.title;
   document.getElementById('page-subtitle').textContent = meta.sub;
@@ -717,41 +739,54 @@ function renderizarTopbarActions(pagina) {
 }
 
 // =========================================================================
-// VISÃO GERAL: OBJETO RENDERIZADO + GRÁFICO SVG SÓBRIO + LISTA COMPACTA
+// VISÃO GERAL: ESTRITAMENTE ISOLADA POR CONTA (EMPTY STATE NO PRIMEIRO ACESSO)
 // =========================================================================
-function renderizarOverview() {
-  const u = state.user;
-  const kpiBox = document.getElementById('overview-kpis');
-  const ordemAtivaRef = state.ordens.find(o => ['EM_CUSTODIA', 'A_CAMINHO', 'EM_EXECUCAO', 'AGUARDANDO_VISTORIA'].includes(o.status)) || state.ordens[0];
-  const slipValor = ordemAtivaRef && ordemAtivaRef.valor_total > 0 ? moeda(ordemAtivaRef.valor_total) : moeda(state.stats.saldo_em_custodia);
-  const slipCodigo = ordemAtivaRef ? codigoOrdem(ordemAtivaRef.id) : 'OS·0001';
-
-  const objetoEscrowHtml = `
+function criarObjetoEscrowHtml(ordemRef) {
+  if (!ordemRef || !(Number(ordemRef.valor_total) > 0)) return '';
+  return `
     <div class="escrow-slip-object" aria-hidden="true">
       <div style="display:flex; justify-content:space-between; align-items:center;">
         <div class="slip-chip"></div>
         <span class="slip-code">ESCROW</span>
       </div>
       <div>
-        <div class="tabular" style="font-size: 12px; font-weight: 500;">${slipValor}</div>
-        <div class="slip-code">${slipCodigo} · PIX</div>
+        <div class="tabular" style="font-size: 12px; font-weight: 500;">${moeda(ordemRef.valor_total)}</div>
+        <div class="slip-code">${codigoOrdem(ordemRef.id)} · PIX</div>
       </div>
     </div>
   `;
+}
+
+function renderizarOverview() {
+  const u = state.user;
+  const kpiBox = document.getElementById('overview-kpis');
+  let ordensEscopo = [];
+  let retidoEscopo = 0;
+  let liquidadoEscopo = 0;
 
   if (u.papel === 'CLIENTE') {
     const minhas = state.ordens.filter(o => o.cliente_id === u.id);
     const ativas = minhas.filter(o => ['EM_CUSTODIA', 'A_CAMINHO', 'EM_EXECUCAO', 'AGUARDANDO_VISTORIA'].includes(o.status));
     const vistoria = minhas.filter(o => o.status === 'AGUARDANDO_VISTORIA').length;
-    const concluidas = minhas.filter(o => o.status === 'CONCLUIDO').length;
+    const concluidasLista = minhas.filter(o => o.status === 'CONCLUIDO');
     const custodiaCliente = ativas.reduce((acc, o) => acc + Number(o.valor_total || 0), 0);
+    const liquidadoCliente = concluidasLista.reduce((acc, o) => acc + Number(o.valor_mao_obra || o.valor_total || 0), 0);
+    const slipHtml = criarObjetoEscrowHtml(ativas[0]);
+
+    ordensEscopo = minhas;
+    retidoEscopo = custodiaCliente;
+    liquidadoEscopo = liquidadoCliente;
 
     kpiBox.innerHTML = `
-      <div class="stat-card has-object">
+      <div class="stat-card ${slipHtml ? 'has-object' : ''}">
         <div class="stat-label">Protegido em custódia</div>
         <div class="stat-figure">${moeda(custodiaCliente)}</div>
-        <div class="stat-delta"><span class="acc">${ativas.length} ativas</span> · ${concluidas} liquidada</div>
-        ${objetoEscrowHtml}
+        <div class="stat-delta">
+          ${ativas.length > 0 || concluidasLista.length > 0
+            ? `<span class="acc">${ativas.length} ativa(s)</span> · ${concluidasLista.length} liquidada(s)`
+            : 'Nenhum pagamento retido nesta conta'}
+        </div>
+        ${slipHtml}
       </div>
       <div class="stat-card">
         <div class="stat-label">Vistorias pendentes</div>
@@ -761,7 +796,11 @@ function renderizarOverview() {
       <div class="stat-card">
         <div class="stat-label">Meus chamados</div>
         <div class="stat-figure">${minhas.length}</div>
-        <div class="stat-delta"><span class="pos">${concluidas} liquidado(s)</span> no histórico</div>
+        <div class="stat-delta">
+          ${minhas.length > 0
+            ? `<span class="pos">${concluidasLista.length} liquidado(s)</span> no histórico`
+            : ' Conta recém-criada'}
+        </div>
       </div>
       <div class="stat-card">
         <div class="stat-label">Profissionais na região</div>
@@ -770,15 +809,23 @@ function renderizarOverview() {
       </div>
     `;
   } else if (u.papel === 'PRESTADOR') {
-    const abertas = state.ordens.filter(o => ['PENDENTE', 'PROPOSTA_RECEBIDA'].includes(o.status)).length;
+    const abertas = state.ordens.filter(o => ['PENDENTE', 'PROPOSTA_RECEBIDA'].includes(o.status) && !o.prestador_id).length;
     const assumidas = state.ordens.filter(o => o.prestador_id === u.id);
+    const ativas = assumidas.filter(o => ['EM_CUSTODIA', 'A_CAMINHO', 'EM_EXECUCAO', 'AGUARDANDO_VISTORIA'].includes(o.status));
+    const concluidasLista = assumidas.filter(o => o.status === 'CONCLUIDO');
+    const liquidadoPrest = concluidasLista.reduce((acc, o) => acc + Number(o.valor_mao_obra || 0), 0);
+    const slipHtml = criarObjetoEscrowHtml(ativas[0]);
+
+    ordensEscopo = assumidas;
+    retidoEscopo = Number(u.saldo_custodia || 0);
+    liquidadoEscopo = liquidadoPrest;
 
     kpiBox.innerHTML = `
-      <div class="stat-card has-object">
+      <div class="stat-card ${slipHtml ? 'has-object' : ''}">
         <div class="stat-label">Disponível para PIX</div>
         <div class="stat-figure">${moeda(u.saldo_disponivel)}</div>
         <div class="stat-delta"><span class="pos">Liberado</span> pós-vistoria</div>
-        ${objetoEscrowHtml}
+        ${slipHtml}
       </div>
       <div class="stat-card">
         <div class="stat-label">Reservado em custódia</div>
@@ -792,17 +839,24 @@ function renderizarOverview() {
       </div>
       <div class="stat-card">
         <div class="stat-label">Nota média</div>
-        <div class="stat-figure">${Number(u.reputacao).toFixed(1)}</div>
-        <div class="stat-delta">Em ${assumidas.length} serviço(s) atendido(s)</div>
+        <div class="stat-figure">${concluidasLista.length > 0 ? Number(u.reputacao).toFixed(1) : '—'}</div>
+        <div class="stat-delta">${assumidas.length > 0 ? `Em ${assumidas.length} serviço(s) atendido(s)` : 'Sem atendimentos avaliados'}</div>
       </div>
     `;
   } else {
+    const ordemAtivaAdmin = state.ordens.find(o => ['EM_CUSTODIA', 'A_CAMINHO', 'EM_EXECUCAO', 'AGUARDANDO_VISTORIA'].includes(o.status));
+    const slipHtml = criarObjetoEscrowHtml(ordemAtivaAdmin);
+
+    ordensEscopo = state.ordens;
+    retidoEscopo = Number(state.stats.saldo_em_custodia || 0);
+    liquidadoEscopo = Number(state.stats.total_repassado || 0);
+
     kpiBox.innerHTML = `
-      <div class="stat-card has-object">
+      <div class="stat-card ${slipHtml ? 'has-object' : ''}">
         <div class="stat-label">Saldo sob custódia</div>
         <div class="stat-figure">${moeda(state.stats.saldo_em_custodia)}</div>
         <div class="stat-delta"><span class="acc">Retido</span> em contas vinculadas</div>
-        ${objetoEscrowHtml}
+        ${slipHtml}
       </div>
       <div class="stat-card">
         <div class="stat-label">Repasses liquidados</div>
@@ -822,10 +876,30 @@ function renderizarOverview() {
     `;
   }
 
-  renderizarGraficoOverview();
+  renderizarGraficoOverview(ordensEscopo, retidoEscopo, liquidadoEscopo, u.papel);
 
-  const recentes = state.ordens.slice(0, 5);
-  document.getElementById('overview-orders-list').innerHTML = recentes.map(o => {
+  const recentes = ordensEscopo.slice(0, 5);
+  const listaBox = document.getElementById('overview-orders-list');
+  const btnVerTodos = document.getElementById('btn-ver-todos-overview');
+  if (btnVerTodos) btnVerTodos.classList.toggle('hidden', recentes.length === 0);
+  if (recentes.length === 0) {
+    listaBox.innerHTML = u.papel === 'PRESTADOR'
+      ? `
+        <div class="empty-state-inline">
+          <div style="margin-bottom: 10px;">Nenhum serviço contratado na sua conta até o momento.</div>
+          <button type="button" class="btn btn-secondary btn-sm" data-action="navegar-app" data-page="mural">Consultar mural de chamados</button>
+        </div>
+      `
+      : `
+        <div class="empty-state-inline">
+          <div style="margin-bottom: 10px;">Nenhum chamado aberto na sua conta até o momento.</div>
+          <button type="button" class="btn btn-secondary btn-sm" data-action="navegar-app" data-page="nova">Abrir chamado gratuito</button>
+        </div>
+      `;
+    return;
+  }
+
+  listaBox.innerHTML = recentes.map(o => {
     const meta = STATUS_META[o.status] || { label: o.status, dot: '' };
     return `
       <div class="compact-order-row" role="button" tabindex="0" data-action="abrir-detalhes" data-id="${o.id}">
@@ -845,11 +919,32 @@ function renderizarOverview() {
   }).join('');
 }
 
-function renderizarGraficoOverview() {
+function renderizarGraficoOverview(ordensEscopo = [], retidoEscopo = 0, liquidadoEscopo = 0, papel = 'CLIENTE') {
   const box = document.getElementById('overview-chart');
   if (!box) return;
 
-  const ordensComValor = [...state.ordens].reverse().slice(-6);
+  document.getElementById('chart-subtitle').textContent = `${moeda(retidoEscopo)} retidos · ${moeda(liquidadoEscopo)} liquidados`;
+
+  if (!ordensEscopo || ordensEscopo.length === 0) {
+    box.innerHTML = papel === 'PRESTADOR'
+      ? `
+        <div class="empty-state">
+          <div class="empty-state-title">Sem movimentação financeira na sua conta</div>
+          <p class="empty-state-desc">Assim que um morador aceitar sua proposta e depositar o valor em custódia, o gráfico das suas ordens aparecerá aqui.</p>
+          <button type="button" class="btn btn-primary btn-sm" data-action="navegar-app" data-page="mural">Ver chamados disponíveis</button>
+        </div>
+      `
+      : `
+        <div class="empty-state">
+          <div class="empty-state-title">Sem movimentação financeira na sua conta</div>
+          <p class="empty-state-desc">Este é o seu primeiro acesso. Publique o reparo desejado para receber orçamentos de profissionais verificados com pagamento protegido em custódia.</p>
+          <button type="button" class="btn btn-primary btn-sm" data-action="navegar-app" data-page="nova">Solicitar primeiro reparo</button>
+        </div>
+      `;
+    return;
+  }
+
+  const ordensComValor = [...ordensEscopo].reverse().slice(-6);
   const maxVal = Math.max(400, ...ordensComValor.map(o => Number(o.valor_total || 180)));
   const teto = Math.ceil(maxVal / 100) * 100;
 
@@ -886,8 +981,6 @@ function renderizarGraficoOverview() {
       <text x="${x + barW / 2}" y="${h - 10}" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" fill="#737373">${codigoOrdem(o.id)}</text>
     `;
   }).join('');
-
-  document.getElementById('chart-subtitle').textContent = `${moeda(state.stats.saldo_em_custodia)} retidos · ${moeda(state.stats.total_repassado)} liquidados`;
 
   box.innerHTML = `
     <svg viewBox="0 0 ${w} ${h}" width="100%" height="100%" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Gráfico de valores por ordem de serviço">
@@ -974,7 +1067,11 @@ function renderizarMuralOrdens() {
   const statusF = document.getElementById('filtro-status').value;
   const catF = document.getElementById('filtro-categoria').value;
 
-  const filtradas = state.ordens.filter(o => {
+  const baseLista = state.user && state.user.papel === 'CLIENTE'
+    ? state.ordens.filter(o => o.cliente_id === state.user.id)
+    : state.ordens;
+
+  const filtradas = baseLista.filter(o => {
     if (statusF && o.status !== statusF) return false;
     if (catF && o.categoria !== catF) return false;
     if (busca) {
@@ -985,6 +1082,19 @@ function renderizarMuralOrdens() {
   });
 
   const container = document.getElementById('orders-container');
+  if (baseLista.length === 0 && state.user && state.user.papel === 'CLIENTE') {
+    container.innerHTML = `
+      <div class="card-surface" style="grid-column: 1 / -1;">
+        <div class="empty-state" style="border: none; background: transparent; min-height: 120px; padding: 4px 0;">
+          <div class="empty-state-title">Você ainda possui zero ordens de serviço cadastradas</div>
+          <p class="empty-state-desc">Abra seu primeiro pedido gratuito informando o endereço e o defeito observado para receber propostas dos profissionais de Volta Redonda.</p>
+          <button type="button" class="btn btn-primary btn-sm" data-action="navegar-app" data-page="nova">Solicitar reparo</button>
+        </div>
+      </div>
+    `;
+    return;
+  }
+
   if (filtradas.length === 0) {
     container.innerHTML = `<div class="card-surface" style="grid-column: 1 / -1; color: var(--text-3);">Nenhuma ordem corresponde aos filtros informados.</div>`;
     return;
@@ -1001,8 +1111,12 @@ function renderizarCarteira() {
 function renderizarPrestadores() {
   const box = document.getElementById('prestadores-container');
   const isCliente = state.user && state.user.papel === 'CLIENTE';
+  const isPrestador = state.user && state.user.papel === 'PRESTADOR';
+  const lista = isPrestador
+    ? state.prestadores.filter(p => p.id === state.user.id)
+    : state.prestadores;
 
-  box.innerHTML = state.prestadores.map(p => {
+  box.innerHTML = lista.map(p => {
     const catNorm = normalizarCategoriaOrdem(p.especialidade) || 'Elétrica';
     const obras = (p.portfolio || []).map(item => `
       <div style="margin-top: 8px; padding: 10px 12px; background: var(--bg-page); border: 1px solid var(--hairline); border-radius: var(--r-control);">
@@ -1025,7 +1139,12 @@ function renderizarPrestadores() {
           data-prestador="${escapeHtml(p.nome)}"
         >Pedir orçamento</button>
       </div>
-    ` : '';
+    ` : (isPrestador ? `
+      <div class="order-bottom">
+        <span class="mono" style="font-size: 12px; color: var(--text-3);">Portfólio público</span>
+        <button type="button" class="btn btn-primary btn-sm" data-action="abrir-portfolio">Adicionar obra</button>
+      </div>
+    ` : '');
 
     return `
       <div class="order-item">
@@ -1043,7 +1162,7 @@ function renderizarPrestadores() {
           </div>
           <div style="margin-top: 16px;">
             <div style="font-size: 12px; color: var(--text-3);">Obras publicadas (${(p.portfolio || []).length})</div>
-            ${obras || '<div style="font-size: 13px; color: var(--text-3); margin-top: 6px;">Sem registros de obra até o momento</div>'}
+            ${obras || '<div style="font-size: 13px; color: var(--text-3); margin-top: 6px;">Sem registros de obra nesta conta até o momento</div>'}
           </div>
         </div>
         ${rodapeCliente}
@@ -1055,7 +1174,7 @@ function renderizarPrestadores() {
 function renderizarTransacoes() {
   const tbody = document.getElementById('transacoes-tbody');
   if (state.transacoes.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="7" style="color:var(--text-3);">Nenhuma transação registrada</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7" style="color:var(--text-3);">Nenhuma movimentação em custódia registrada nesta conta</td></tr>`;
     return;
   }
   const mapOp = {
@@ -1080,10 +1199,11 @@ function renderizarTransacoes() {
 }
 
 function renderizarDisputas() {
-  const disputas = state.ordens.filter(o => o.status === 'EM_DISPUTA');
+  const ordensProprias = obterOrdensDoUsuarioAtual();
+  const disputas = ordensProprias.filter(o => o.status === 'EM_DISPUTA');
   const box = document.getElementById('disputas-container');
   if (disputas.length === 0) {
-    box.innerHTML = `<div class="card-surface" style="grid-column: 1 / -1; color: var(--text-3);">Nenhuma ordem em mediação neste momento</div>`;
+    box.innerHTML = `<div class="card-surface" style="grid-column: 1 / -1; color: var(--text-3);">Nenhuma ordem em mediação nesta conta</div>`;
     return;
   }
   box.innerHTML = disputas.map(o => `
@@ -1110,7 +1230,7 @@ function renderizarDisputas() {
 function renderizarNotificacoes() {
   const tbody = document.getElementById('notificacoes-tbody');
   if (state.notificacoes.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="7" style="color:var(--text-3);">Nenhum aviso enviado</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7" style="color:var(--text-3);">Nenhum aviso enviado para esta conta até o momento</td></tr>`;
     return;
   }
   tbody.innerHTML = state.notificacoes.map(n => `
@@ -1222,7 +1342,7 @@ function fecharModal() {
 
 async function abrirModalDetalhes(ordemId) {
   try {
-    const res = await fetch(`/api/ordens/${ordemId}`);
+    const res = await fetch(`/api/ordens/${ordemId}`, { headers: authHeaders() });
     const json = await res.json();
     if (!json.sucesso) return toast(json.mensagem, 'error');
 

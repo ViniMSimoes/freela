@@ -396,8 +396,39 @@ async function runTests() {
     }
     console.log(`  ✓ ${actionsUsadas.size} ações de interface verificadas sem conflito com CSP.`);
 
+    // Teste 26: Isolamento Multi-Tenant no Primeiro Acesso (Conta Nova Zerada)
+    console.log('• Teste 26: Isolamento de Dados por Conta no Primeiro Acesso (Multi-Tenant)');
+    const resNovoCli = await fetch(`${baseUrl}/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        nome: 'Vinicius Primeiro Acesso',
+        email: `vinicius.${Date.now()}@email.com`,
+        senha: 'senha12345',
+        papel: 'CLIENTE'
+      })
+    });
+    assert.strictEqual(resNovoCli.status, 201);
+    const { token: tokenNovoCli } = await resNovoCli.json();
+    const hdrNovoCli = { 'Authorization': `Bearer ${tokenNovoCli}` };
+
+    const [rOrdCli, rTrxCli, rNotCli, rOrdAlheia] = await Promise.all([
+      fetch(`${baseUrl}/ordens`, { headers: hdrNovoCli }),
+      fetch(`${baseUrl}/transacoes`, { headers: hdrNovoCli }),
+      fetch(`${baseUrl}/notificacoes`, { headers: hdrNovoCli }),
+      fetch(`${baseUrl}/ordens/1`, { headers: hdrNovoCli })
+    ]);
+    const [dOrdCli, dTrxCli, dNotCli] = await Promise.all([
+      rOrdCli.json(), rTrxCli.json(), rNotCli.json()
+    ]);
+    assert.strictEqual(dOrdCli.dados.length, 0, 'Conta nova deve iniciar com 0 ordens');
+    assert.strictEqual(dTrxCli.dados.length, 0, 'Conta nova deve iniciar com 0 transações escrow');
+    assert.strictEqual(dNotCli.dados.length, 0, 'Conta nova deve iniciar com 0 notificações');
+    assert.strictEqual(rOrdAlheia.status, 403, 'Conta nova deve receber HTTP 403 ao consultar ordem de terceiro');
+    console.log('  ✓ Conta recém-criada recebe 0 ordens, 0 transações, 0 notificações e bloqueio HTTP 403 em ordens de terceiros.');
+
     console.log('\n======================================================');
-    console.log(' TODOS OS 25 TESTES PASSARAM COM 100% DE SUCESSO!     ');
+    console.log(' TODOS OS 26 TESTES PASSARAM COM 100% DE SUCESSO!     ');
     console.log('======================================================\n');
   } catch (err) {
     console.error('\n❌ FALHA NOS TESTES:', err);
