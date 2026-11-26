@@ -6,7 +6,10 @@ const platform = require('../controllers/platformController');
 // Autenticação e Cadastro (Sprint 2)
 router.post('/auth/register', platform.registrarUsuario);
 router.post('/auth/login', platform.loginUsuario);
+router.get('/auth/me', platform.obterSessaoAtual);
+router.patch('/auth/perfil', platform.atualizarPerfil);
 router.post('/usuarios/:id/verificar-documento', platform.enviarDocumentoVerificacao);
+router.get('/avaliacoes', platform.listarAvaliacoes);
 
 // Rotas de Usuários e Estatísticas
 router.get('/stats', controller.obterEstatisticas);

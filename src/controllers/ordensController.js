@@ -443,7 +443,7 @@ exports.obterEstatisticas = (req, res) => {
 // 10. Listar Usuários
 exports.listarUsuarios = (req, res) => {
   try {
-    const usuarios = db.prepare('SELECT id, nome, email, papel, telefone, especialidade, reputacao, saldo_disponivel, saldo_custodia, verificado FROM usuarios ORDER BY id ASC').all();
+    const usuarios = db.prepare('SELECT id, nome, email, papel, telefone, especialidade, reputacao, saldo_disponivel, saldo_custodia, verificado, documento_url, criado_em FROM usuarios ORDER BY id ASC').all();
     res.json({ sucesso: true, dados: usuarios });
   } catch (error) {
     console.error('[ERRO listarUsuarios]:', error);

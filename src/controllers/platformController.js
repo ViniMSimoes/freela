@@ -34,6 +34,27 @@ function gerarToken(usuario) {
   return `${payload}.${sig}`;
 }
 
+function extrairUsuarioAutenticado(req) {
+  const authHeader = req.headers.authorization || '';
+  if (!authHeader.startsWith('Bearer ')) return null;
+  const token = authHeader.slice(7).trim();
+  const partes = token.split('.');
+  if (partes.length !== 2) return null;
+  const [payloadB64, sigB64] = partes;
+  const expectedSig = crypto.createHmac('sha256', TOKEN_SECRET).update(payloadB64).digest('base64url');
+  const sigBuf = Buffer.from(sigB64);
+  const expBuf = Buffer.from(expectedSig);
+  if (sigBuf.length !== expBuf.length || !crypto.timingSafeEqual(sigBuf, expBuf)) return null;
+  try {
+    const dados = JSON.parse(Buffer.from(payloadB64, 'base64url').toString('utf8'));
+    if (!dados.exp || dados.exp < Date.now()) return null;
+    const usuario = db.prepare('SELECT id, nome, email, papel, telefone, especialidade, reputacao, saldo_disponivel, saldo_custodia, verificado, documento_url, criado_em FROM usuarios WHERE id = ?').get(dados.id);
+    return usuario || null;
+  } catch {
+    return null;
+  }
+}
+
 function verificarAdmin(adminId) {
   const id = parseInt(adminId, 10);
   if (isNaN(id)) return null;
@@ -321,5 +342,73 @@ exports.obterMetricasAdmin = (req, res) => {
   } catch (error) {
     console.error('[ERRO obterMetricasAdmin]:', error);
     res.status(500).json({ sucesso: false, mensagem: 'Erro ao calcular métricas gerenciais.' });
+  }
+};
+
+// 8. Sessão Atual via Bearer Token (GET /api/auth/me)
+exports.obterSessaoAtual = (req, res) => {
+  const usuario = extrairUsuarioAutenticado(req);
+  if (!usuario) {
+    return res.status(401).json({ sucesso: false, mensagem: 'Sessão inválida ou expirada.' });
+  }
+  res.json({ sucesso: true, dados: usuario });
+};
+
+// 9. Atualização de Perfil Pessoal (PATCH /api/auth/perfil)
+exports.atualizarPerfil = (req, res) => {
+  try {
+    const usuario = extrairUsuarioAutenticado(req);
+    if (!usuario) {
+      return res.status(401).json({ sucesso: false, mensagem: 'Autenticação obrigatória.' });
+    }
+
+    const { nome, telefone, especialidade, nova_senha } = req.body;
+    const nomeSan = sanitizarTexto(nome, 100) || usuario.nome;
+    const telSan = sanitizarTexto(telefone, 20) || usuario.telefone;
+    const espSan = usuario.papel === 'PRESTADOR'
+      ? (sanitizarTexto(especialidade, 60) || usuario.especialidade)
+      : usuario.especialidade;
+
+    if (nova_senha && String(nova_senha).length >= 6) {
+      const novoHash = hashSenha(String(nova_senha));
+      db.prepare('UPDATE usuarios SET nome = ?, telefone = ?, especialidade = ?, senha_hash = ? WHERE id = ?')
+        .run(nomeSan, telSan, espSan, novoHash, usuario.id);
+    } else {
+      db.prepare('UPDATE usuarios SET nome = ?, telefone = ?, especialidade = ? WHERE id = ?')
+        .run(nomeSan, telSan, espSan, usuario.id);
+    }
+
+    const atualizado = db.prepare('SELECT id, nome, email, papel, telefone, especialidade, reputacao, saldo_disponivel, saldo_custodia, verificado, documento_url, criado_em FROM usuarios WHERE id = ?').get(usuario.id);
+    res.json({ sucesso: true, mensagem: 'Perfil atualizado com sucesso.', dados: atualizado });
+  } catch (error) {
+    console.error('[ERRO atualizarPerfil]:', error);
+    res.status(500).json({ sucesso: false, mensagem: 'Erro ao atualizar perfil.' });
+  }
+};
+
+// 10. Listagem de Avaliações Públicas e Mútuas (GET /api/avaliacoes)
+exports.listarAvaliacoes = (req, res) => {
+  try {
+    const avaliadoId = req.query.avaliado_id ? parseInt(req.query.avaliado_id, 10) : null;
+    let sql = `
+      SELECT a.*, o.titulo as ordem_titulo, o.categoria,
+             u1.nome as avaliador_nome, u1.papel as avaliador_papel,
+             u2.nome as avaliado_nome
+      FROM avaliacoes a
+      JOIN ordens_servico o ON a.ordem_id = o.id
+      JOIN usuarios u1 ON a.avaliador_id = u1.id
+      JOIN usuarios u2 ON a.avaliado_id = u2.id
+    `;
+    const params = [];
+    if (avaliadoId) {
+      sql += ' WHERE a.avaliado_id = ?';
+      params.push(avaliadoId);
+    }
+    sql += ' ORDER BY a.id DESC LIMIT 50';
+    const dados = db.prepare(sql).all(...params);
+    res.json({ sucesso: true, dados });
+  } catch (error) {
+    console.error('[ERRO listarAvaliacoes]:', error);
+    res.status(500).json({ sucesso: false, mensagem: 'Erro ao listar avaliações.' });
   }
 };

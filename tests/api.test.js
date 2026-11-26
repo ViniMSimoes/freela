@@ -1,4 +1,14 @@
 const assert = require('node:assert');
+const fs = require('node:fs');
+const path = require('node:path');
+
+// Isola banco de testes para não poluir o freela.db principal da aplicação
+const TEST_DB_FILE = path.resolve(process.cwd(), './freela_test_suite.db');
+if (!process.env.DB_PATH) {
+  try { if (fs.existsSync(TEST_DB_FILE)) fs.unlinkSync(TEST_DB_FILE); } catch {}
+  process.env.DB_PATH = TEST_DB_FILE;
+}
+
 const app = require('../src/server');
 const db = require('../src/database/connection');
 
@@ -330,14 +340,47 @@ async function runTests() {
     assert.ok(typeof dataMetAdmin.dados.taxa_conversao_percentual === 'number');
     console.log(`  ✓ Métricas gerenciais retornadas (Conversão: ${dataMetAdmin.dados.taxa_conversao_percentual}%).`);
 
+    // Teste 23: Sessão Autenticada via Bearer Token (GET /api/auth/me & PATCH /api/auth/perfil)
+    console.log('• Teste 23: GET /api/auth/me & PATCH /api/auth/perfil (Sessão Bearer Token)');
+    const resMeSemToken = await fetch(`${baseUrl}/auth/me`);
+    assert.strictEqual(resMeSemToken.status, 401);
+
+    const resMeComToken = await fetch(`${baseUrl}/auth/me`, {
+      headers: { 'Authorization': `Bearer ${dataReg.token}` }
+    });
+    assert.strictEqual(resMeComToken.status, 200);
+    const dataMe = await resMeComToken.json();
+    assert.strictEqual(dataMe.dados.id, novoUserId);
+
+    const resUpdPerfil = await fetch(`${baseUrl}/auth/perfil`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${dataReg.token}`
+      },
+      body: JSON.stringify({ nome: 'João Pintor Especialista', telefone: '(24) 98877-6655' })
+    });
+    assert.strictEqual(resUpdPerfil.status, 200);
+    console.log('  ✓ Sessão Bearer validada (HTTP 401 sem token, HTTP 200 autenticado) e perfil atualizado.');
+
+    // Teste 24: Histórico Público de Avaliações Mútuas (GET /api/avaliacoes)
+    console.log('• Teste 24: GET /api/avaliacoes (Histórico de Avaliações Mútuas)');
+    const resAvList = await fetch(`${baseUrl}/avaliacoes`);
+    assert.strictEqual(resAvList.status, 200);
+    const dataAvList = await resAvList.json();
+    assert.ok(dataAvList.dados.length >= 2);
+    console.log(`  ✓ Total de avaliações mútuas consultadas: ${dataAvList.dados.length}.`);
+
     console.log('\n======================================================');
-    console.log(' TODOS OS 22 TESTES PASSARAM COM 100% DE SUCESSO!     ');
+    console.log(' TODOS OS 24 TESTES PASSARAM COM 100% DE SUCESSO!     ');
     console.log('======================================================\n');
   } catch (err) {
     console.error('\n❌ FALHA NOS TESTES:', err);
     process.exitCode = 1;
   } finally {
     server.close();
+    try { db.close(); } catch {}
+    try { if (fs.existsSync(TEST_DB_FILE)) fs.unlinkSync(TEST_DB_FILE); } catch {}
   }
 }
 

@@ -13,6 +13,7 @@ node_proc = subprocess.Popen(["node", "src/server.js"], cwd=r"C:\Users\06165\Des
 time.sleep(2)
 
 tabs = [
+    ("print_landing.png", f"http://localhost:{PORT}"),
     ("print_mural.png", f"http://localhost:{PORT}#mural"),
     ("print_escrow.png", f"http://localhost:{PORT}#escrow"),
     ("print_carteira.png", f"http://localhost:{PORT}#carteira"),

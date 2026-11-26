@@ -77,6 +77,15 @@ if (countUsers === 0) {
     'https://images.unsplash.com/photo-1542013936693-884638332954'
   );
 
+  // OS 4: Concluída e liquidada com sucesso
+  insertOS.run(
+    1, 2, 'Climatização', 'Higienização e Carga de Gás Ar Split 12.000 BTUs',
+    'Aparelho do quarto perdendo rendimento térmico e gotejando pela bandeja interna.',
+    '27253-120', 'Rua 40, nº 310 - Vila Santa Cecília, Volta Redonda/RJ',
+    'BAIXA', 'CONCLUIDO', 240.0, 19.2, 259.2, 'PIX',
+    null
+  );
+
   // Transações de custódia
   db.prepare(`
     INSERT INTO transacoes_custodia (ordem_id, valor, tipo, status, detalhes)
@@ -87,6 +96,36 @@ if (countUsers === 0) {
     INSERT INTO transacoes_custodia (ordem_id, valor, tipo, status, detalhes)
     VALUES (3, 270.0, 'BLOQUEIO_ESCROW', 'CONFIRMADO', 'Fundos retidos aguardando homologação de vistoria')
   `).run();
+
+  db.prepare(`
+    INSERT INTO transacoes_custodia (ordem_id, valor, tipo, status, detalhes)
+    VALUES (4, 259.2, 'BLOQUEIO_ESCROW', 'CONFIRMADO', 'Fundos retidos via PIX na contratação da OS #4')
+  `).run();
+
+  db.prepare(`
+    INSERT INTO transacoes_custodia (ordem_id, valor, tipo, status, detalhes)
+    VALUES (4, 240.0, 'LIBERACAO_REPASSE', 'CONFIRMADO', 'Vistoria presencial homologada pelo cliente titular. Repasse liquidado.')
+  `).run();
+
+  // Avaliações mútuas iniciais na OS 4
+  db.prepare(`
+    INSERT INTO avaliacoes (ordem_id, avaliador_id, avaliado_id, nota, comentario)
+    VALUES (4, 1, 2, 5, 'Atendimento pontual, equipamento voltou a gelar perfeitamente e ambiente limpo.')
+  `).run();
+
+  db.prepare(`
+    INSERT INTO avaliacoes (ordem_id, avaliador_id, avaliado_id, nota, comentario)
+    VALUES (4, 2, 1, 5, 'Cliente cordial, acesso livre ao equipamento e vistoria realizada na hora.')
+  `).run();
+
+  // Logs iniciais de mensageria
+  const insNotif = db.prepare(`
+    INSERT INTO notificacoes_log (usuario_id, canal, destinatario, assunto, mensagem, status)
+    VALUES (?, ?, ?, ?, ?, 'ENVIADO')
+  `);
+  insNotif.run(1, 'WHATSAPP', '(24) 98811-2233', null, 'Pagamento confirmado para OS #1! R$ 320,00 retidos com segurança no FreeLA Escrow.');
+  insNotif.run(1, 'EMAIL', 'maria.cliente@email.com', 'Vistoria Pendente — OS #3', 'O reparo hidráulico da OS #3 aguarda sua vistoria presencial para liberação do repasse.');
+  insNotif.run(2, 'WHATSAPP', '(24) 99922-3344', null, 'Repasse de R$ 240,00 liberado na sua carteira digital referente à OS #4.');
 
   // Proposta cadastrada para a OS 2
   db.prepare(`
