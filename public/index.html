@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>FreeLA — Serviços Residenciais com Garantia Escrow</title>
+  <title>FreeLA — Custódia financeira para reparos residenciais</title>
   <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
@@ -11,409 +11,445 @@
   <!-- ====================================================================
        1. PUBLIC LANDING PAGE (#view-landing)
        ==================================================================== -->
-  <div id="view-landing">
-    <header class="landing-nav">
-      <div class="landing-nav-inner">
-        <a href="#" class="brand-mark">
-          <span class="brand-icon">
-            <svg class="icon" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+  <div id="view-landing" class="landing-root">
+    <header class="landing-header">
+      <div class="landing-header-inner">
+        <a href="#" class="wordmark">
+          <span class="wordmark-glyph" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+              <rect x="2" y="7.5" width="14" height="8.5" rx="2" stroke="currentColor" stroke-width="1.6"/>
+              <path d="M5.5 7.5V5a3.5 3.5 0 0 1 7 0v2.5" stroke="currentColor" stroke-width="1.6"/>
+              <circle cx="9" cy="11.75" r="1.25" fill="currentColor"/>
+            </svg>
           </span>
           <span>FreeLA</span>
         </a>
 
-        <nav class="landing-links">
-          <a href="#sec-como-funciona">Como Funciona</a>
-          <a href="#sec-categorias">Especialidades</a>
+        <nav class="landing-nav-links">
+          <a href="#sec-como-funciona">Como funciona</a>
+          <a href="#sec-valores">Valores na região</a>
           <a href="#sec-profissionais">Profissionais</a>
-          <a href="#sec-escrow">Garantia Escrow</a>
         </nav>
 
-        <div style="display: flex; align-items: center; gap: 10px;">
-          <button class="btn btn-ghost" onclick="irParaAuth('login')">Entrar</button>
-          <button class="btn btn-primary" onclick="irParaAuth('register', 'CLIENTE')">Criar Conta</button>
+        <div class="landing-nav-cta">
+          <button type="button" class="link-quiet" onclick="irParaAuth('login')">Entrar</button>
+          <button type="button" class="btn btn-primary" onclick="irParaAuth('register', 'CLIENTE')">Criar conta</button>
         </div>
       </div>
     </header>
 
-    <section class="landing-hero">
-      <div class="landing-hero-grid">
-        <div>
-          <div class="eyebrow">
-            <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-            Custódia Financeira Protegida · Sul Fluminense
-          </div>
-          <h1 class="hero-title">Contrate reparos residenciais e libere o pagamento após a vistoria.</h1>
-          <p class="hero-subtitle">
-            Conectamos moradores a eletricistas, encanadores e pintores verificados. O pagamento fica retido em conta de garantia (Escrow) e só vai para o profissional quando você aprovar o serviço concluído.
+    <section class="hero-scene">
+      <div class="hero-scene-bg">
+        <img
+          src="/img/hero-workbench.webp"
+          width="1376"
+          height="768"
+          fetchpriority="high"
+          alt="Bancada de madeira com nível de latão, carretel de fio de cobre e caixa de ferramentas em sala iluminada de apartamento em reforma"
+        >
+      </div>
+
+      <div class="hero-container">
+        <div class="hero-copy">
+          <h1 class="hero-headline">Pagamento de obra retido até você aprovar o reparo</h1>
+          <p class="hero-subhead">
+            Moradores de Volta Redonda contratam eletricistas, encanadores e pintores com valor guardado em custódia e liberado via PIX somente na vistoria presencial
           </p>
-          <div class="hero-cta-row">
-            <button class="btn btn-primary btn-lg" onclick="irParaAuth('register', 'CLIENTE')">
-              Solicitar Reparo Gratuito
-            </button>
-            <button class="btn btn-secondary btn-lg" onclick="irParaAuth('register', 'PRESTADOR')">
-              Sou Profissional Autônomo
-            </button>
-          </div>
-
-          <div class="hero-metrics">
-            <div>
-              <div class="hero-metric-val" id="land-kpi-ordens">0</div>
-              <div class="hero-metric-lbl">Chamados registrados</div>
-            </div>
-            <div>
-              <div class="hero-metric-val" id="land-kpi-custodia">R$ 0</div>
-              <div class="hero-metric-lbl">Protegidos em custódia</div>
-            </div>
-            <div>
-              <div class="hero-metric-val" id="land-kpi-prestadores">0</div>
-              <div class="hero-metric-lbl">Profissionais ativos</div>
-            </div>
+          <div class="hero-actions">
+            <button type="button" class="btn btn-primary btn-hero" onclick="irParaAuth('register', 'CLIENTE')">Solicitar reparo</button>
+            <button type="button" class="btn btn-secondary btn-hero" onclick="irParaAuth('register', 'PRESTADOR')">Atuar como prestador</button>
           </div>
         </div>
 
-        <div class="hero-preview-card" id="sec-escrow">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
-            <strong style="font-size: 14px;">Fluxo de Garantia FreeLA Escrow</strong>
-            <span class="badge badge-success">Transação ACID</span>
+        <!-- Product Preview Rising from Bottom Edge -->
+        <div class="hero-product-frame" aria-label="Prévia do painel FreeLA">
+          <div class="preview-window-bar">
+            <div class="preview-window-dots"><span></span><span></span><span></span></div>
+            <span class="mono">freela.app/custodia</span>
+            <span class="mono" id="land-live-summary">Carregando livro-razão</span>
           </div>
 
-          <div class="preview-step">
-            <div class="preview-dot active">1</div>
-            <div>
-              <strong style="font-size: 13.5px;">Abertura e Orçamentos</strong>
-              <p style="font-size: 12.5px; color: var(--text-secondary);">Você descreve o reparo com CEP e compara propostas de profissionais verificados.</p>
+          <div class="preview-window-grid">
+            <div class="preview-mini-nav">
+              <div class="preview-mini-row active">
+                <span>Visão geral</span>
+              </div>
+              <div class="preview-mini-row">
+                <span>Ordens de serviço</span>
+                <span class="mono" id="land-kpi-ordens">4</span>
+              </div>
+              <div class="preview-mini-row">
+                <span>Livro-razão escrow</span>
+              </div>
+              <div class="preview-mini-row">
+                <span>Carteira PIX</span>
+              </div>
+              <div class="preview-mini-row">
+                <span>Profissionais</span>
+                <span class="mono" id="land-kpi-prestadores">2</span>
+              </div>
             </div>
-          </div>
 
-          <div class="preview-step">
-            <div class="preview-dot active">2</div>
-            <div>
-              <strong style="font-size: 13.5px;">Retenção em Conta Escrow (PIX / Cartão)</strong>
-              <p style="font-size: 12.5px; color: var(--text-secondary);">O valor é bloqueado na plataforma antes da visita. O prestador trabalha com pagamento assegurado.</p>
-            </div>
-          </div>
+            <div class="preview-mini-body">
+              <div class="stat-card" style="min-height: 152px;">
+                <div>
+                  <div class="stat-label">Retido em garantia ativa</div>
+                  <div class="stat-figure" id="land-kpi-custodia">R$ 590,00</div>
+                </div>
+                <div class="stat-delta"><span class="acc">2 ordens</span> aguardando vistoria presencial</div>
+                <div class="escrow-slip-object" aria-hidden="true">
+                  <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <div class="slip-chip"></div>
+                    <span class="slip-code">ESCROW</span>
+                  </div>
+                  <div>
+                    <div style="font-size:12px; font-weight:500;">R$ 270,00</div>
+                    <div class="slip-code">OS·0003 · PIX</div>
+                  </div>
+                </div>
+              </div>
 
-          <div class="preview-step">
-            <div class="preview-dot active">3</div>
-            <div>
-              <strong style="font-size: 13.5px;">Execução Acompanhada em Tempo Real</strong>
-              <p style="font-size: 12.5px; color: var(--text-secondary);">Avisos automáticos por WhatsApp e e-mail a cada mudança de etapa da obra.</p>
-            </div>
-          </div>
-
-          <div class="preview-step">
-            <div class="preview-dot">4</div>
-            <div>
-              <strong style="font-size: 13.5px;">Vistoria Presencial e Saque PIX</strong>
-              <p style="font-size: 12.5px; color: var(--text-secondary);">Após sua aprovação formal, o saldo entra na carteira do prestador para resgate imediato.</p>
+              <div class="stat-card" style="min-height: 152px;">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                  <span class="order-code">OS·0003 · Hidráulica</span>
+                  <span class="status-inline"><span class="dot dot-accent"></span>Vistoria pendente</span>
+                </div>
+                <div>
+                  <div style="font-size: 15px; font-weight: 500; margin-top: 6px;">Instalação de válvula de retenção</div>
+                  <div style="font-size: 12px; color: var(--text-3); margin-top: 2px;">Vila Santa Cecília · Roberto Souza</div>
+                </div>
+                <div class="lock-track" style="margin-top: 10px;">
+                  <div class="lock-seg filled"></div>
+                  <div class="lock-seg filled"></div>
+                  <div class="lock-seg filled"></div>
+                  <div class="lock-seg filled"></div>
+                  <div class="lock-seg"></div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </div>
     </section>
 
-    <section class="landing-section" id="sec-como-funciona">
-      <div class="section-header-center">
-        <h2>Segurança jurídica e financeira para os dois lados</h2>
-        <p>Eliminamos o risco de adiantamentos perdidos para o morador e o risco de inadimplência para o trabalhador autônomo.</p>
+    <section class="land-section" id="sec-como-funciona">
+      <div class="land-section-head">
+        <h2 class="land-section-title">Como o dinheiro percorre cada chamado</h2>
+        <p class="land-section-desc">
+          Sem sinal perdido na mão de desconhecidos e sem calote depois da ferramenta guardada. A custódia acompanha o serviço do orçamento ao recibo.
+        </p>
       </div>
 
-      <div class="steps-grid-4">
-        <div class="feature-card">
-          <div class="feature-icon-box">
-            <svg class="icon" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      <div class="process-layout">
+        <div class="warm-panel">
+          <span class="warm-panel-num">01 · Contratação e trava</span>
+          <div>
+            <h3>Depósito antes da visita, repasse bloqueado</h3>
+            <p>O morador escolhe o orçamento e paga via PIX ou cartão. O valor entra na conta vinculada da ordem e o prestador recebe confirmação no WhatsApp antes de sair para o endereço.</p>
           </div>
-          <h3>Custódia Bloqueada</h3>
-          <p>Nenhum centavo é liberado durante a execução. O repasse exige o status de vistoria pendente e a assinatura do cliente titular.</p>
         </div>
 
-        <div class="feature-card">
-          <div class="feature-icon-box">
-            <svg class="icon" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg>
+        <div class="warm-panel">
+          <span class="warm-panel-num">02 · Vistoria do titular</span>
+          <div>
+            <h3>Liberação exige obra concluída</h3>
+            <p>Enquanto o reparo está em andamento, o repasse permanece travado no servidor. Somente o cliente dono do chamado libera o saldo após testar o serviço no local.</p>
           </div>
-          <h3>Profissionais Verificados</h3>
-          <p>Análise documental pela administração, portfólio público de serviços anteriores e reputação calculada por avaliações mútuas.</p>
         </div>
 
-        <div class="feature-card">
-          <div class="feature-icon-box">
-            <svg class="icon" viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        <div class="warm-panel">
+          <span class="warm-panel-num">03 · Saque ou mediação</span>
+          <div>
+            <h3>PIX na carteira ou arbitragem</h3>
+            <p>Aprovada a entrega, o prestador transfere para sua chave PIX na hora. Havendo defeito técnico, a disputa congela o saldo até decisão fundamentada.</p>
           </div>
-          <h3>Saque PIX Instantâneo</h3>
-          <p>Concluída e aprovada a vistoria, o profissional transfere o valor líquido diretamente para sua chave PIX cadastrada.</p>
-        </div>
-
-        <div class="feature-card">
-          <div class="feature-icon-box">
-            <svg class="icon" viewBox="0 0 24 24"><path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="M7 21h10"/><path d="M12 3v18"/><path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2"/></svg>
-          </div>
-          <h3>Mediação de Disputas</h3>
-          <p>Em caso de divergência técnica no serviço, o valor permanece congelado até parecer da equipe de arbitragem.</p>
         </div>
       </div>
     </section>
 
-    <section class="landing-section" id="sec-categorias" style="padding-top: 16px;">
-      <div class="section-header-center">
-        <h2>Especialidades atendidas</h2>
-        <p>Referências médias de mão de obra praticadas em Volta Redonda e região Sul Fluminense.</p>
-      </div>
+    <section class="land-section" id="sec-valores">
+      <div class="rates-split">
+        <div>
+          <h2 class="land-section-title" style="margin-bottom: 16px;">Faixas de mão de obra em Volta Redonda</h2>
+          <p class="land-section-desc" style="margin-bottom: 24px;">
+            Valores de referência levantados junto a profissionais autônomos do Sul Fluminense para orientar seu pedido antes do envio das propostas.
+          </p>
+          <button type="button" class="btn btn-primary" style="background: var(--warm-text-1);" onclick="irParaAuth('register', 'CLIENTE')">Abrir chamado gratuito</button>
+        </div>
 
-      <div class="categories-grid">
-        <div class="cat-card" onclick="irParaAuth('register', 'CLIENTE')">
-          <strong style="display: block; font-size: 15px; margin-bottom: 6px;">Elétrica</strong>
-          <p style="font-size: 12.5px; color: var(--text-secondary); margin-bottom: 10px;">Quadros, disjuntores, tomadas e chuveiros.</p>
-          <span class="badge badge-neutral">R$ 180 a R$ 380</span>
-        </div>
-        <div class="cat-card" onclick="irParaAuth('register', 'CLIENTE')">
-          <strong style="display: block; font-size: 15px; margin-bottom: 6px;">Hidráulica</strong>
-          <p style="font-size: 12.5px; color: var(--text-secondary); margin-bottom: 10px;">Vazamentos, sifões, registros e esgoto.</p>
-          <span class="badge badge-neutral">R$ 150 a R$ 320</span>
-        </div>
-        <div class="cat-card" onclick="irParaAuth('register', 'CLIENTE')">
-          <strong style="display: block; font-size: 15px; margin-bottom: 6px;">Pintura</strong>
-          <p style="font-size: 12.5px; color: var(--text-secondary); margin-bottom: 10px;">Fachadas, massa corrida e impermeabilização.</p>
-          <span class="badge badge-neutral">R$ 350 a R$ 950</span>
-        </div>
-        <div class="cat-card" onclick="irParaAuth('register', 'CLIENTE')">
-          <strong style="display: block; font-size: 15px; margin-bottom: 6px;">Alvenaria</strong>
-          <p style="font-size: 12.5px; color: var(--text-secondary); margin-bottom: 10px;">Pisos, revestimentos, reboco e calçadas.</p>
-          <span class="badge badge-neutral">R$ 300 a R$ 1.200</span>
-        </div>
-        <div class="cat-card" onclick="irParaAuth('register', 'CLIENTE')">
-          <strong style="display: block; font-size: 15px; margin-bottom: 6px;">Climatização</strong>
-          <p style="font-size: 12.5px; color: var(--text-secondary); margin-bottom: 10px;">Instalação de splits, limpeza e carga de gás.</p>
-          <span class="badge badge-neutral">R$ 200 a R$ 550</span>
+        <div class="rates-list">
+          <div class="rate-row" onclick="irParaAuth('register', 'CLIENTE')">
+            <span style="font-weight: 500;">Elétrica</span>
+            <span style="font-size: 13px; color: var(--warm-text-2);">Quadros, disjuntores, tomadas e chuveiros</span>
+            <span class="mono" style="font-size: 13px;">R$ 180,00 – R$ 380,00</span>
+          </div>
+          <div class="rate-row" onclick="irParaAuth('register', 'CLIENTE')">
+            <span style="font-weight: 500;">Hidráulica</span>
+            <span style="font-size: 13px; color: var(--warm-text-2);">Vazamentos, sifões, registros e esgoto</span>
+            <span class="mono" style="font-size: 13px;">R$ 150,00 – R$ 320,00</span>
+          </div>
+          <div class="rate-row" onclick="irParaAuth('register', 'CLIENTE')">
+            <span style="font-weight: 500;">Climatização</span>
+            <span style="font-size: 13px; color: var(--warm-text-2);">Instalação de split, limpeza e carga de gás</span>
+            <span class="mono" style="font-size: 13px;">R$ 200,00 – R$ 550,00</span>
+          </div>
+          <div class="rate-row" onclick="irParaAuth('register', 'CLIENTE')">
+            <span style="font-weight: 500;">Pintura</span>
+            <span style="font-size: 13px; color: var(--warm-text-2);">Fachadas, massa corrida e impermeabilização</span>
+            <span class="mono" style="font-size: 13px;">R$ 350,00 – R$ 950,00</span>
+          </div>
+          <div class="rate-row" onclick="irParaAuth('register', 'CLIENTE')">
+            <span style="font-weight: 500;">Alvenaria</span>
+            <span style="font-size: 13px; color: var(--warm-text-2);">Pisos, revestimentos, reboco e calçadas</span>
+            <span class="mono" style="font-size: 13px;">R$ 300,00 – R$ 1.200,00</span>
+          </div>
         </div>
       </div>
     </section>
 
-    <section class="landing-section" id="sec-profissionais" style="padding-top: 16px;">
-      <div class="section-header-center">
-        <h2>Profissionais cadastrados na plataforma</h2>
-        <p>Catálogo público alimentado em tempo real com reputação e portfólio de obras.</p>
+    <section class="land-section" id="sec-profissionais" style="border-bottom: none;">
+      <div class="land-section-head">
+        <h2 class="land-section-title">Profissionais com cadastro ativo</h2>
+        <p class="land-section-desc">Reputação calculada sobre serviços liquidados e histórico técnico aberto para consulta.</p>
       </div>
       <div id="landing-prestadores-grid" class="orders-grid"></div>
     </section>
 
     <footer class="landing-footer">
-      <div class="landing-footer-inner">
-        <div>
-          <strong style="color: #FFFFFF; font-size: 15px;">FreeLA Platform</strong>
-          <p style="font-size: 12.5px; margin-top: 4px;">Intermediação de Serviços Residenciais com Custódia Escrow · Volta Redonda, RJ</p>
-        </div>
-        <div style="display: flex; gap: 16px; font-size: 13px;">
-          <a href="#" onclick="irParaAuth('login'); return false;">Acessar Conta</a>
-          <a href="#" onclick="irParaAuth('register', 'PRESTADOR'); return false;">Cadastrar como Prestador</a>
-        </div>
+      <span>FreeLA · Custódia financeira para reparos residenciais · Volta Redonda, RJ</span>
+      <div style="display: flex; gap: 20px;">
+        <a href="#" onclick="irParaAuth('login'); return false;">Entrar</a>
+        <a href="#" onclick="irParaAuth('register', 'PRESTADOR'); return false;">Cadastro de prestador</a>
       </div>
     </footer>
   </div>
 
   <!-- ====================================================================
-       2. DEDICATED AUTH SCREEN (#view-auth)
+       2. AUTH VIEW (#view-auth)
        ==================================================================== -->
-  <div id="view-auth" class="auth-screen hidden">
-    <aside class="auth-aside">
+  <div id="view-auth" class="auth-layout hidden">
+    <aside class="auth-left">
       <div>
-        <a href="#" onclick="mostrarLanding(); return false;" class="brand-mark" style="color: #FFFFFF; margin-bottom: 48px;">
-          <span class="brand-icon" style="background: #2563EB;">
-            <svg class="icon" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+        <a href="#" onclick="mostrarLanding(); return false;" class="wordmark" style="margin-bottom: 56px; display: inline-flex;">
+          <span class="wordmark-glyph" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+              <rect x="2" y="7.5" width="14" height="8.5" rx="2" stroke="currentColor" stroke-width="1.6"/>
+              <path d="M5.5 7.5V5a3.5 3.5 0 0 1 7 0v2.5" stroke="currentColor" stroke-width="1.6"/>
+              <circle cx="9" cy="11.75" r="1.25" fill="currentColor"/>
+            </svg>
           </span>
           <span>FreeLA</span>
         </a>
 
-        <h2>Pagamentos retidos com segurança até a entrega aprovada.</h2>
-        <p>Acesse seu painel para acompanhar orçamentos, liberar vistorias, transferir valores via PIX ou auditar transações.</p>
-
-        <div class="auth-trust-list">
-          <div class="auth-trust-item">
-            <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>
-            Livro-razão auditável com transações ACID
-          </div>
-          <div class="auth-trust-item">
-            <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>
-            Controle estrito de titularidade na aprovação
-          </div>
-          <div class="auth-trust-item">
-            <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>
-            Notificações em tempo real (WhatsApp e E-mail)
-          </div>
-        </div>
+        <h2 class="auth-left-headline">Cada etapa da obra registrada no livro-razão</h2>
+        <p class="auth-left-sub">
+          Entre para acompanhar propostas, homologar vistorias presenciais, transferir valores via PIX ou auditar contratos em custódia.
+        </p>
       </div>
 
-      <div style="font-size: 12px; color: #64748B;">
-        <a href="#" onclick="mostrarLanding(); return false;" style="color: #94A3B8;">← Voltar para a página inicial</a>
-      </div>
+      <a href="#" onclick="mostrarLanding(); return false;" style="font-size: 13px; color: #8a847a;">Voltar para o início</a>
     </aside>
 
-    <main class="auth-main">
-      <div class="auth-box">
-        <div class="auth-tabs">
-          <button type="button" class="auth-tab active" id="tab-auth-login" onclick="alternarModoAuth('login')">Entrar na Conta</button>
-          <button type="button" class="auth-tab" id="tab-auth-register" onclick="alternarModoAuth('register')">Criar Nova Conta</button>
+    <main class="auth-right">
+      <div class="auth-panel">
+        <div class="segmented">
+          <button type="button" class="seg-btn active" id="tab-auth-login" onclick="alternarModoAuth('login')">Entrar</button>
+          <button type="button" class="seg-btn" id="tab-auth-register" onclick="alternarModoAuth('register')">Criar conta</button>
         </div>
 
-        <!-- Formulário de Login -->
         <form id="form-login">
-          <div class="form-group">
-            <label class="form-label" for="login-email">E-mail cadastrado</label>
-            <input type="email" id="login-email" class="form-input" placeholder="seu@email.com" required>
+          <div class="field-group">
+            <label class="field-label" for="login-email">E-mail</label>
+            <input type="email" id="login-email" class="field" placeholder="nome@email.com" required>
           </div>
-          <div class="form-group">
-            <label class="form-label" for="login-senha">Senha</label>
-            <input type="password" id="login-senha" class="form-input" placeholder="Digite sua senha" required>
+          <div class="field-group">
+            <label class="field-label" for="login-senha">Senha</label>
+            <input type="password" id="login-senha" class="field" placeholder="Sua senha" required>
           </div>
-          <button type="submit" class="btn btn-primary" style="width: 100%; padding: 11px;">Entrar na Plataforma</button>
+          <button type="submit" class="btn btn-primary" style="width: 100%;">Acessar painel</button>
 
-          <div class="demo-accounts-box">
-            <div class="demo-accounts-title">Acesso rápido de demonstração</div>
-            <div class="demo-pills">
-              <button type="button" class="demo-pill" onclick="loginRapidoDemo('maria.cliente@email.com')">
-                <strong>Maria Santos</strong><br>Perfil Cliente
+          <div class="demo-list">
+            <div class="demo-list-label">Contas de homologação (acesso direto)</div>
+            <div class="demo-grid">
+              <button type="button" class="demo-btn" onclick="loginRapidoDemo('maria.cliente@email.com')">
+                <span class="demo-btn-name">Maria Santos</span>
+                <span class="demo-btn-role">Cliente residencial</span>
               </button>
-              <button type="button" class="demo-pill" onclick="loginRapidoDemo('carlos.eletrica@email.com')">
-                <strong>Carlos Silva</strong><br>Prestador · Elétrica
+              <button type="button" class="demo-btn" onclick="loginRapidoDemo('carlos.eletrica@email.com')">
+                <span class="demo-btn-name">Carlos Silva</span>
+                <span class="demo-btn-role">Prestador · Elétrica</span>
               </button>
-              <button type="button" class="demo-pill" onclick="loginRapidoDemo('roberto.hidraulica@email.com')">
-                <strong>Roberto Souza</strong><br>Prestador · Hidráulica
+              <button type="button" class="demo-btn" onclick="loginRapidoDemo('roberto.hidraulica@email.com')">
+                <span class="demo-btn-name">Roberto Souza</span>
+                <span class="demo-btn-role">Prestador · Hidráulica</span>
               </button>
-              <button type="button" class="demo-pill" onclick="loginRapidoDemo('admin@freela.com.br')">
-                <strong>Administração</strong><br>Suporte & Mediação
+              <button type="button" class="demo-btn" onclick="loginRapidoDemo('admin@freela.com.br')">
+                <span class="demo-btn-name">Administração</span>
+                <span class="demo-btn-role">Mediação e suporte</span>
               </button>
             </div>
           </div>
         </form>
 
-        <!-- Formulário de Cadastro -->
         <form id="form-register" class="hidden">
-          <label class="form-label">Tipo de conta</label>
-          <div class="role-selector">
-            <button type="button" class="role-option selected" id="opt-role-cliente" onclick="selecionarPapelCadastro('CLIENTE')">
-              <strong>Cliente</strong>
-              <span>Contratar reparos</span>
-            </button>
-            <button type="button" class="role-option" id="opt-role-prestador" onclick="selecionarPapelCadastro('PRESTADOR')">
-              <strong>Prestador</strong>
-              <span>Receber chamados</span>
-            </button>
-          </div>
-          <input type="hidden" id="reg-papel" value="CLIENTE">
-
-          <div class="form-group">
-            <label class="form-label" for="reg-nome">Nome completo</label>
-            <input type="text" id="reg-nome" class="form-input" placeholder="Ex: Ana Paula Costa" required maxlength="100">
-          </div>
-
-          <div class="form-row">
-            <div class="form-group">
-              <label class="form-label" for="reg-email">E-mail</label>
-              <input type="email" id="reg-email" class="form-input" placeholder="ana@email.com" required>
+          <div class="field-group">
+            <label class="field-label">Perfil de uso</label>
+            <div class="segmented" style="margin-bottom: 0;">
+              <button type="button" class="seg-btn active" id="opt-role-cliente" onclick="selecionarPapelCadastro('CLIENTE')">Cliente</button>
+              <button type="button" class="seg-btn" id="opt-role-prestador" onclick="selecionarPapelCadastro('PRESTADOR')">Prestador</button>
             </div>
-            <div class="form-group">
-              <label class="form-label" for="reg-telefone">WhatsApp / Telefone</label>
-              <input type="text" id="reg-telefone" class="form-input" placeholder="(24) 99999-0000" required maxlength="20">
+            <input type="hidden" id="reg-papel" value="CLIENTE">
+          </div>
+
+          <div class="field-group">
+            <label class="field-label" for="reg-nome">Nome completo</label>
+            <input type="text" id="reg-nome" class="field" placeholder="Nome e sobrenome" required maxlength="100">
+          </div>
+
+          <div class="field-row">
+            <div class="field-group">
+              <label class="field-label" for="reg-email">E-mail</label>
+              <input type="email" id="reg-email" class="field" placeholder="nome@email.com" required>
+            </div>
+            <div class="field-group">
+              <label class="field-label" for="reg-telefone">WhatsApp</label>
+              <input type="text" id="reg-telefone" class="field" placeholder="(24) 99999-0000" required maxlength="20">
             </div>
           </div>
 
-          <div class="form-group hidden" id="reg-especialidade-group">
-            <label class="form-label" for="reg-especialidade">Especialidade principal</label>
-            <select id="reg-especialidade" class="form-select">
-              <option value="Elétrica Residencial">Elétrica Residencial</option>
-              <option value="Hidráulica e Desentupimento">Hidráulica e Desentupimento</option>
-              <option value="Pintura e Acabamento">Pintura e Acabamento</option>
-              <option value="Alvenaria e Reforma">Alvenaria e Reforma</option>
+          <div class="field-group hidden" id="reg-especialidade-group">
+            <label class="field-label" for="reg-especialidade">Especialidade principal</label>
+            <select id="reg-especialidade" class="field">
+              <option value="Elétrica Residencial">Elétrica residencial</option>
+              <option value="Hidráulica e Desentupimento">Hidráulica e desentupimento</option>
+              <option value="Pintura e Acabamento">Pintura e acabamento</option>
+              <option value="Alvenaria e Reforma">Alvenaria e reforma</option>
               <option value="Climatização">Climatização</option>
             </select>
           </div>
 
-          <div class="form-group">
-            <label class="form-label" for="reg-senha">Crie uma senha (mínimo 6 caracteres)</label>
-            <input type="password" id="reg-senha" class="form-input" placeholder="Mínimo 6 caracteres" required minlength="6">
+          <div class="field-group">
+            <label class="field-label" for="reg-senha">Senha</label>
+            <input type="password" id="reg-senha" class="field" placeholder="Mínimo de 6 caracteres" required minlength="6">
           </div>
 
-          <button type="submit" class="btn btn-primary" style="width: 100%; padding: 11px;">Criar Conta Gratuita</button>
+          <button type="submit" class="btn btn-primary" style="width: 100%;">Criar conta</button>
         </form>
       </div>
     </main>
   </div>
 
   <!-- ====================================================================
-       3. AUTHENTICATED SAAS WORKSPACE (#view-app)
+       3. AUTHENTICATED APP SHELL (#view-app)
        ==================================================================== -->
   <div id="view-app" class="app-shell hidden">
-    <aside class="app-sidebar">
+    <aside class="sidebar">
       <div>
-        <div class="sidebar-brand">
-          <div class="brand-mark">
-            <span class="brand-icon">
-              <svg class="icon" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+        <div class="sidebar-head">
+          <div class="wordmark">
+            <span class="wordmark-glyph" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                <rect x="2" y="7.5" width="14" height="8.5" rx="2" stroke="currentColor" stroke-width="1.6"/>
+                <path d="M5.5 7.5V5a3.5 3.5 0 0 1 7 0v2.5" stroke="currentColor" stroke-width="1.6"/>
+                <circle cx="9" cy="11.75" r="1.25" fill="currentColor"/>
+              </svg>
             </span>
             <span>FreeLA</span>
           </div>
         </div>
 
-        <div class="sidebar-section-label">Operação</div>
-        <nav class="sidebar-nav" id="sidebar-nav-main"></nav>
+        <div class="sidebar-search" onclick="navegarApp('mural'); setTimeout(()=>document.getElementById('filtro-busca').focus(), 60)">
+          <svg class="ico" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+          <span>Buscar</span>
+          <kbd>Ctrl</kbd><kbd>K</kbd>
+        </div>
 
-        <div class="sidebar-section-label" style="margin-top: 14px;">Governança & Conta</div>
-        <nav class="sidebar-nav" id="sidebar-nav-secondary"></nav>
+        <div class="sidebar-group-label">Operação</div>
+        <nav class="nav-stack" id="sidebar-nav-main"></nav>
+
+        <div class="sidebar-group-label">Governança e conta</div>
+        <nav class="nav-stack" id="sidebar-nav-secondary"></nav>
       </div>
 
-      <div class="sidebar-user-card">
-        <div class="user-summary">
-          <div class="avatar-circle" id="sb-avatar">U</div>
-          <div class="user-meta">
-            <strong id="sb-user-name">Usuário</strong>
-            <span id="sb-user-role">CLIENTE</span>
+      <div class="sidebar-foot">
+        <div class="account-row">
+          <div class="avatar" id="sb-avatar">MS</div>
+          <div class="account-info">
+            <span class="account-name" id="sb-user-name">Usuário</span>
+            <span class="account-role" id="sb-user-role">Cliente</span>
           </div>
         </div>
-        <button class="btn btn-secondary btn-sm" style="width: 100%;" onclick="encerrarSessao()">
-          <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-          Sair da Conta
+        <button type="button" class="btn btn-secondary btn-sm" style="width: 100%;" onclick="encerrarSessao()">
+          <svg class="ico" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          Encerrar sessão
         </button>
       </div>
     </aside>
 
-    <div class="app-main">
-      <header class="app-topbar">
-        <div class="topbar-title">
-          <h1 id="page-title">Visão Geral</h1>
-          <p id="page-subtitle">Acompanhamento operacional em tempo real</p>
+    <div class="workspace">
+      <header class="topbar">
+        <div class="breadcrumb">
+          <span style="color: var(--text-3);">FreeLA</span>
+          <span style="color: var(--text-3);">/</span>
+          <span id="page-breadcrumb" style="color: var(--text-1); font-weight: 500;">Visão geral</span>
         </div>
-        <div class="topbar-actions" id="topbar-actions"></div>
+        <div class="topbar-right" id="topbar-actions"></div>
       </header>
 
-      <main class="app-content">
+      <main class="workspace-body">
+        <div class="page-heading-row">
+          <h1 class="page-heading">
+            <span id="page-title">Novembro</span>
+            <span class="page-heading-muted" id="page-subtitle">2026</span>
+          </h1>
+        </div>
+
         <!-- PÁGINA: VISÃO GERAL -->
         <section id="sec-overview" class="app-page">
-          <div class="kpi-grid" id="overview-kpis"></div>
-          <div class="panel-card">
-            <div class="panel-header">
-              <h2>Ordens Recentes</h2>
-              <button class="btn btn-secondary btn-sm" onclick="navegarApp('mural')">Ver Todas</button>
+          <div class="stats-row" id="overview-kpis"></div>
+
+          <div class="overview-split">
+            <div class="card-surface">
+              <div class="card-head">
+                <div>
+                  <div class="card-title">Movimentação em custódia e repasses</div>
+                  <div class="mono" style="font-size: 12px; color: var(--text-3); margin-top: 2px;" id="chart-subtitle">Volume acumulado por ordem</div>
+                </div>
+                <div style="display: flex; gap: 16px; font-size: 12px; color: var(--text-2); white-space: nowrap; flex-shrink: 0;">
+                  <span class="status-inline"><span class="dot dot-accent"></span>Retido em escrow</span>
+                  <span class="status-inline"><span class="dot" style="background: #d4d4d8;"></span>Liquidado</span>
+                </div>
+              </div>
+              <div class="chart-box" id="overview-chart"></div>
             </div>
-            <div id="overview-orders-list" class="orders-grid"></div>
+
+            <div class="card-surface">
+              <div class="card-head">
+                <span class="card-title">Chamados recentes</span>
+                <button type="button" class="link-quiet" style="font-size: 13px;" onclick="navegarApp('mural')">Ver todos</button>
+              </div>
+              <div class="compact-order-list" id="overview-orders-list"></div>
+            </div>
           </div>
         </section>
 
-        <!-- PÁGINA: MURAL DE ORDENS -->
+        <!-- PÁGINA: ORDENS DE SERVIÇO -->
         <section id="sec-mural" class="app-page hidden">
-          <div class="filters-bar">
-            <input type="text" id="filtro-busca" class="form-input search-field" placeholder="Pesquisar por título, descrição, CEP ou bairro...">
-            <select id="filtro-status" class="form-select" style="width: 200px;">
+          <div class="toolbar">
+            <input type="text" id="filtro-busca" class="field toolbar-search" placeholder="Buscar ordem, CEP ou rua">
+            <select id="filtro-status" class="field" style="width: 196px;">
               <option value="">Todos os status</option>
-              <option value="PENDENTE">Pendente</option>
-              <option value="PROPOSTA_RECEBIDA">Com Propostas</option>
-              <option value="EM_CUSTODIA">Em Custódia</option>
-              <option value="A_CAMINHO">A Caminho</option>
-              <option value="EM_EXECUCAO">Em Execução</option>
-              <option value="AGUARDANDO_VISTORIA">Vistoria Pendente</option>
+              <option value="PENDENTE">Aguardando propostas</option>
+              <option value="PROPOSTA_RECEBIDA">Com propostas</option>
+              <option value="EM_CUSTODIA">Em custódia</option>
+              <option value="A_CAMINHO">A caminho</option>
+              <option value="EM_EXECUCAO">Em execução</option>
+              <option value="AGUARDANDO_VISTORIA">Vistoria pendente</option>
               <option value="CONCLUIDO">Concluído</option>
-              <option value="EM_DISPUTA">Em Disputa</option>
+              <option value="EM_DISPUTA">Em disputa</option>
             </select>
-            <select id="filtro-categoria" class="form-select" style="width: 180px;">
-              <option value="">Todas categorias</option>
+            <select id="filtro-categoria" class="field" style="width: 172px;">
+              <option value="">Todas as áreas</option>
               <option value="Elétrica">Elétrica</option>
               <option value="Hidráulica">Hidráulica</option>
               <option value="Pintura">Pintura</option>
@@ -426,21 +462,17 @@
 
         <!-- PÁGINA: NOVA SOLICITAÇÃO -->
         <section id="sec-nova" class="app-page hidden">
-          <div class="panel-card" style="max-width: 760px;">
-            <div class="panel-header">
-              <h2>Publicar Solicitação de Reparo</h2>
-            </div>
-
-            <div style="background: var(--accent-soft); border: 1px solid #BFDBFE; border-radius: var(--radius-sm); padding: 14px 16px; margin-bottom: 20px;">
-              <strong id="estimator-title" style="font-size: 13px; color: var(--accent);">Estimativa Regional: Elétrica</strong>
-              <p id="estimator-text" style="font-size: 12.5px; color: var(--text-secondary); margin-top: 3px;"></p>
+          <div class="card-surface" style="max-width: 720px;">
+            <div style="padding: 12px 16px; background: var(--bg-page); border: 1px solid var(--hairline); border-radius: var(--r-control); margin-bottom: 20px;">
+              <div style="font-size: 13px; font-weight: 500;" id="estimator-title">Referência em Volta Redonda · Elétrica</div>
+              <div style="font-size: 13px; color: var(--text-2); margin-top: 2px;" id="estimator-text"></div>
             </div>
 
             <form id="form-nova-solicitacao">
-              <div class="form-row">
-                <div class="form-group">
-                  <label class="form-label" for="select-categoria">Categoria do serviço</label>
-                  <select id="select-categoria" class="form-select" required>
+              <div class="field-row">
+                <div class="field-group">
+                  <label class="field-label" for="select-categoria">Especialidade</label>
+                  <select id="select-categoria" class="field" required>
                     <option value="Elétrica">Elétrica</option>
                     <option value="Hidráulica">Hidráulica</option>
                     <option value="Pintura">Pintura</option>
@@ -448,41 +480,41 @@
                     <option value="Climatização">Climatização</option>
                   </select>
                 </div>
-                <div class="form-group">
-                  <label class="form-label" for="select-urgencia">Nível de urgência</label>
-                  <select id="select-urgencia" class="form-select" required>
-                    <option value="BAIXA">Baixa (Agendável)</option>
-                    <option value="MEDIA" selected>Média (Próximos dias)</option>
-                    <option value="ALTA">Alta (Prioritário)</option>
-                    <option value="EMERGENCIAL">Emergencial (Hoje)</option>
+                <div class="field-group">
+                  <label class="field-label" for="select-urgencia">Prioridade</label>
+                  <select id="select-urgencia" class="field" required>
+                    <option value="BAIXA">Baixa</option>
+                    <option value="MEDIA" selected>Média</option>
+                    <option value="ALTA">Alta</option>
+                    <option value="EMERGENCIAL">Emergencial</option>
                   </select>
                 </div>
               </div>
 
-              <div class="form-group">
-                <label class="form-label" for="input-titulo">Título resumido da demanda</label>
-                <input type="text" id="input-titulo" class="form-input" placeholder="Ex: Substituição de disjuntor geral bifásico" required maxlength="140">
+              <div class="field-group">
+                <label class="field-label" for="input-titulo">Resumo do reparo</label>
+                <input type="text" id="input-titulo" class="field" placeholder="Ex: Troca de disjuntor geral no quadro interno" required maxlength="140">
               </div>
 
-              <div class="form-group">
-                <label class="form-label" for="input-descricao">Descrição técnica do defeito ou serviço</label>
-                <textarea id="input-descricao" class="form-textarea" rows="4" placeholder="Detalhe o problema observado, local da residência e se já possui materiais..." required maxlength="800"></textarea>
+              <div class="field-group">
+                <label class="field-label" for="input-descricao">Descrição detalhada</label>
+                <textarea id="input-descricao" class="field" rows="4" placeholder="Relate o defeito observado, cômodo e disponibilidade de horário" required maxlength="800"></textarea>
               </div>
 
-              <div class="form-row">
-                <div class="form-group">
-                  <label class="form-label" for="input-cep">CEP</label>
-                  <input type="text" id="input-cep" class="form-input" placeholder="27255-000" required maxlength="10">
+              <div class="field-row">
+                <div class="field-group">
+                  <label class="field-label" for="input-cep">CEP</label>
+                  <input type="text" id="input-cep" class="field mono" placeholder="27255-000" required maxlength="10">
                 </div>
-                <div class="form-group">
-                  <label class="form-label" for="input-endereco">Endereço completo</label>
-                  <input type="text" id="input-endereco" class="form-input" placeholder="Rua 16, nº 220, Vila Santa Cecília, Volta Redonda/RJ" required maxlength="200">
+                <div class="field-group">
+                  <label class="field-label" for="input-endereco">Endereço</label>
+                  <input type="text" id="input-endereco" class="field" placeholder="Rua 16, nº 220, Vila Santa Cecília, Volta Redonda/RJ" required maxlength="200">
                 </div>
               </div>
 
-              <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 8px;">
+              <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px;">
                 <button type="button" class="btn btn-secondary" onclick="navegarApp('mural')">Cancelar</button>
-                <button type="submit" class="btn btn-primary">Publicar Chamado</button>
+                <button type="submit" class="btn btn-primary">Publicar chamado</button>
               </div>
             </form>
           </div>
@@ -490,57 +522,57 @@
 
         <!-- PÁGINA: CARTEIRA & PIX -->
         <section id="sec-carteira" class="app-page hidden">
-          <div class="wallet-banner-grid">
-            <div class="wallet-box primary">
-              <span class="badge" style="background: rgba(255,255,255,0.15); color: #FFFFFF;">Disponível para Saque Imediato</span>
-              <div class="wallet-amount" id="wallet-available">R$ 0,00</div>
-              <p style="font-size: 12.5px; color: #94A3B8;">Valores liberados após aprovação de vistoria presencial pelos clientes.</p>
+          <div class="two-col-grid" style="margin-bottom: 20px;">
+            <div class="stat-card">
+              <div class="stat-label">Saldo liberado para saque</div>
+              <div class="stat-figure" id="wallet-available">R$ 0,00</div>
+              <div class="stat-delta"><span class="pos">Disponível</span> para transferência imediata via PIX</div>
             </div>
-            <div class="wallet-box">
-              <span class="badge badge-warning">Retido em Garantia Escrow</span>
-              <div class="wallet-amount" id="wallet-escrowed">R$ 0,00</div>
-              <p style="font-size: 12.5px; color: var(--text-muted);">Valores já pagos pelos clientes e reservados para seus serviços em andamento.</p>
+            <div class="stat-card">
+              <div class="stat-label">Reservado em custódia ativa</div>
+              <div class="stat-figure" id="wallet-escrowed">R$ 0,00</div>
+              <div class="stat-delta"><span class="acc">Protegido</span> até homologação da vistoria pelo cliente</div>
             </div>
           </div>
 
-          <div class="panel-card" style="max-width: 680px;">
-            <div class="panel-header">
-              <h2>Transferência Instantânea via PIX</h2>
+          <div class="card-surface" style="max-width: 640px;">
+            <div class="card-head">
+              <span class="card-title">Transferir saldo via PIX</span>
             </div>
             <form id="form-saque">
-              <div class="form-row">
-                <div class="form-group">
-                  <label class="form-label" for="saque-valor">Valor do resgate (R$)</label>
-                  <input type="number" id="saque-valor" class="form-input" placeholder="150.00" min="1" step="0.01" required>
+              <div class="field-row">
+                <div class="field-group">
+                  <label class="field-label" for="saque-valor">Valor (R$)</label>
+                  <input type="number" id="saque-valor" class="field mono" placeholder="150.00" min="1" step="0.01" required>
                 </div>
-                <div class="form-group">
-                  <label class="form-label" for="saque-pix">Chave PIX de destino</label>
-                  <input type="text" id="saque-pix" class="form-input" placeholder="CPF, e-mail, celular ou chave aleatória" required>
+                <div class="field-group">
+                  <label class="field-label" for="saque-pix">Chave PIX</label>
+                  <input type="text" id="saque-pix" class="field" placeholder="CPF, e-mail, celular ou chave aleatória" required>
                 </div>
               </div>
-              <button type="submit" class="btn btn-success">Solicitar Transferência PIX</button>
+              <button type="submit" class="btn btn-primary">Confirmar transferência</button>
             </form>
           </div>
         </section>
 
-        <!-- PÁGINA: PRESTADORES & PORTFÓLIO -->
+        <!-- PÁGINA: PROFISSIONAIS & PORTFÓLIO -->
         <section id="sec-prestadores" class="app-page hidden">
           <div id="prestadores-container" class="orders-grid"></div>
         </section>
 
         <!-- PÁGINA: LIVRO-RAZÃO ESCROW -->
         <section id="sec-escrow" class="app-page hidden">
-          <div class="table-wrap">
-            <table class="data-table">
+          <div class="table-surface">
+            <table class="clean-table">
               <thead>
                 <tr>
-                  <th>ID</th>
-                  <th>Data / Hora</th>
-                  <th>Ordem Vinculada</th>
+                  <th>Registro</th>
+                  <th>Data e hora</th>
+                  <th>Ordem</th>
                   <th>Operação</th>
-                  <th>Valor</th>
                   <th>Status</th>
-                  <th>Registro de Auditoria</th>
+                  <th>Histórico</th>
+                  <th class="align-right">Valor</th>
                 </tr>
               </thead>
               <tbody id="transacoes-tbody"></tbody>
@@ -548,24 +580,24 @@
           </div>
         </section>
 
-        <!-- PÁGINA: DISPUTAS & MEDIAÇÃO -->
+        <!-- PÁGINA: DISPUTAS -->
         <section id="sec-disputas" class="app-page hidden">
           <div id="disputas-container" class="orders-grid"></div>
         </section>
 
         <!-- PÁGINA: NOTIFICAÇÕES -->
         <section id="sec-notificacoes" class="app-page hidden">
-          <div class="table-wrap">
-            <table class="data-table">
+          <div class="table-surface">
+            <table class="clean-table">
               <thead>
                 <tr>
                   <th>ID</th>
-                  <th>Data / Hora</th>
+                  <th>Data e hora</th>
                   <th>Canal</th>
                   <th>Destinatário</th>
                   <th>Usuário</th>
                   <th>Mensagem</th>
-                  <th>Status</th>
+                  <th>Situação</th>
                 </tr>
               </thead>
               <tbody id="notificacoes-tbody"></tbody>
@@ -575,79 +607,79 @@
 
         <!-- PÁGINA: PAINEL ADMIN -->
         <section id="sec-admin" class="app-page hidden">
-          <div class="kpi-grid" id="admin-metrics-grid"></div>
-          <div class="wallet-banner-grid">
-            <div class="panel-card" style="margin-bottom: 0;">
-              <div class="panel-header">
-                <h2>Homologação Cadastral (Selo Verificado)</h2>
+          <div class="stats-row" id="admin-metrics-grid" style="grid-template-columns: repeat(4, 1fr);"></div>
+          <div class="two-col-grid">
+            <div class="card-surface">
+              <div class="card-head">
+                <span class="card-title">Homologação documental</span>
               </div>
               <div id="admin-verificacoes-list"></div>
             </div>
 
-            <div class="panel-card" style="margin-bottom: 0;">
-              <div class="panel-header">
-                <h2>Cupons Promocionais na Taxa</h2>
+            <div class="card-surface">
+              <div class="card-head">
+                <span class="card-title">Cupons de desconto na taxa</span>
               </div>
               <form id="form-novo-cupom" style="display: flex; gap: 8px; margin-bottom: 16px;">
-                <input type="text" id="cupom-codigo" class="form-input" placeholder="Código (ex: OBRA25)" required maxlength="20">
-                <input type="number" id="cupom-desconto" class="form-input" placeholder="% Desc." min="1" max="100" style="width: 110px;" required>
-                <button type="submit" class="btn btn-primary">Adicionar</button>
+                <input type="text" id="cupom-codigo" class="field mono" placeholder="Código (ex: OBRA25)" required maxlength="20">
+                <input type="number" id="cupom-desconto" class="field mono" placeholder="%" min="1" max="100" style="width: 88px;" required>
+                <button type="submit" class="btn btn-primary">Criar</button>
               </form>
               <div id="admin-cupons-list"></div>
             </div>
           </div>
         </section>
 
-        <!-- PÁGINA: MEU PERFIL & VERIFICAÇÃO -->
+        <!-- PÁGINA: MINHA CONTA -->
         <section id="sec-perfil" class="app-page hidden">
-          <div class="wallet-banner-grid">
-            <div class="panel-card">
-              <div class="panel-header">
-                <h2>Dados da Minha Conta</h2>
+          <div class="two-col-grid">
+            <div class="card-surface">
+              <div class="card-head">
+                <span class="card-title">Dados cadastrais</span>
               </div>
               <form id="form-perfil">
-                <div class="form-group">
-                  <label class="form-label">Nome completo</label>
-                  <input type="text" id="perf-nome" class="form-input" required>
+                <div class="field-group">
+                  <label class="field-label">Nome completo</label>
+                  <input type="text" id="perf-nome" class="field" required>
                 </div>
-                <div class="form-group">
-                  <label class="form-label">E-mail (identificador único)</label>
-                  <input type="email" id="perf-email" class="form-input" disabled style="background: var(--bg-subtle);">
+                <div class="field-group">
+                  <label class="field-label">E-mail</label>
+                  <input type="email" id="perf-email" class="field" disabled style="background: var(--bg-raised); color: var(--text-3);">
                 </div>
-                <div class="form-group">
-                  <label class="form-label">Telefone / WhatsApp</label>
-                  <input type="text" id="perf-telefone" class="form-input" required>
+                <div class="field-group">
+                  <label class="field-label">Telefone / WhatsApp</label>
+                  <input type="text" id="perf-telefone" class="field" required>
                 </div>
-                <div class="form-group" id="perf-esp-group">
-                  <label class="form-label">Especialidade profissional</label>
-                  <input type="text" id="perf-especialidade" class="form-input">
+                <div class="field-group" id="perf-esp-group">
+                  <label class="field-label">Especialidade</label>
+                  <input type="text" id="perf-especialidade" class="field">
                 </div>
-                <div class="form-group">
-                  <label class="form-label">Alterar senha (opcional)</label>
-                  <input type="password" id="perf-senha" class="form-input" placeholder="Deixe em branco para manter a atual">
+                <div class="field-group">
+                  <label class="field-label">Nova senha (opcional)</label>
+                  <input type="password" id="perf-senha" class="field" placeholder="Em branco mantém a atual">
                 </div>
-                <button type="submit" class="btn btn-primary">Salvar Alterações</button>
+                <button type="submit" class="btn btn-primary">Salvar dados</button>
               </form>
             </div>
 
-            <div class="panel-card">
-              <div class="panel-header">
-                <h2>Verificação Documental</h2>
-                <span id="perf-verificado-badge" class="badge badge-neutral">Verificando</span>
+            <div class="card-surface">
+              <div class="card-head">
+                <span class="card-title">Verificação de identidade</span>
+                <span id="perf-verificado-badge" class="status-inline"></span>
               </div>
-              <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 16px;">
-                Contas homologadas recebem o selo de Perfil Verificado nos orçamentos e no catálogo público de profissionais.
+              <p style="font-size: 13px; color: var(--text-2); margin-bottom: 16px;">
+                Envie o link do comprovante de identidade ou registro técnico para análise da administração.
               </p>
               <form id="form-documento">
-                <div class="form-group">
-                  <label class="form-label">URL ou protocolo do documento com foto (CNH / RG / CREA)</label>
-                  <input type="text" id="perf-doc-url" class="form-input" placeholder="https://..." required>
+                <div class="field-group">
+                  <label class="field-label">Documento (CNH, RG ou registro)</label>
+                  <input type="text" id="perf-doc-url" class="field" placeholder="https://..." required>
                 </div>
-                <button type="submit" class="btn btn-secondary">Enviar para Homologação</button>
+                <button type="submit" class="btn btn-secondary">Enviar documento</button>
               </form>
 
-              <div style="margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--border);">
-                <h3 style="font-size: 14px; font-weight: 700; margin-bottom: 10px;">Avaliações Recebidas</h3>
+              <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--hairline);">
+                <div class="card-title" style="margin-bottom: 12px;">Avaliações recebidas</div>
                 <div id="perf-avaliacoes-list"></div>
               </div>
             </div>
@@ -657,13 +689,13 @@
     </div>
   </div>
 
-  <!-- MODAL REUTILIZÁVEL -->
-  <div id="modal" class="modal-backdrop hidden" onclick="if(event.target===this) fecharModal()">
-    <div class="modal-dialog" id="modal-body"></div>
+  <!-- MODAL -->
+  <div id="modal" class="modal-overlay hidden" onclick="if(event.target===this) fecharModal()">
+    <div class="modal-panel" id="modal-body"></div>
   </div>
 
-  <!-- STACK DE NOTIFICAÇÕES TOAST -->
-  <div id="toast-stack" class="toast-stack"></div>
+  <!-- TOAST -->
+  <div id="toast-region" class="toast-region"></div>
 
   <script src="/js/app.js"></script>
 </body>

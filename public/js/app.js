@@ -1,4 +1,5 @@
-// FreeLA SaaS Platform — Complete Client Application Controller
+// FreeLA — Unslopped Client Controller
+// unslop methodology by Damir Sokolovsky (@heydamir), CC BY 4.0
 
 const STORAGE_TOKEN_KEY = 'freela_saas_token';
 
@@ -16,37 +17,50 @@ const state = {
   selectedStarRating: 5
 };
 
+const ICONS = {
+  overview: '<svg class="ico" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>',
+  mural: '<svg class="ico" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6"/><path d="M9 16h4"/></svg>',
+  nova: '<svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v8"/><path d="M8 12h8"/></svg>',
+  carteira: '<svg class="ico" viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="14" rx="2"/><path d="M2 10h20"/><circle cx="16.5" cy="14.5" r="1"/></svg>',
+  prestadores: '<svg class="ico" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
+  admin: '<svg class="ico" viewBox="0 0 24 24"><path d="M12 3v18"/><path d="M18 9v12"/><path d="M6 15v6"/></svg>',
+  escrow: '<svg class="ico" viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>',
+  disputas: '<svg class="ico" viewBox="0 0 24 24"><path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="M7 21h10"/><path d="M12 3v18"/><path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2"/></svg>',
+  notificacoes: '<svg class="ico" viewBox="0 0 24 24"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>',
+  perfil: '<svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c1.8-3.5 5-5 8-5s6.2 1.5 8 5"/></svg>'
+};
+
 const ESTIMATIVAS_PRECO = {
-  'Elétrica': { min: 180, max: 380, desc: 'Substituição de disjuntores, chuveiros, tomadas e revisão de quadros.' },
-  'Hidráulica': { min: 150, max: 320, desc: 'Reparo de vazamentos, troca de sifões, registros e desentupimentos.' },
-  'Pintura': { min: 350, max: 950, desc: 'Pintura acrílica interna e externa, massa corrida e impermeabilização.' },
-  'Alvenaria': { min: 300, max: 1200, desc: 'Assentamento de pisos, revestimentos, reboco e pequenos reparos.' },
-  'Climatização': { min: 200, max: 550, desc: 'Instalação de aparelhos split, higienização técnica e recarga de gás.' }
+  'Elétrica': { min: '180,00', max: '380,00', desc: 'Substituição de disjuntores, chuveiros, tomadas e revisão de quadros.' },
+  'Hidráulica': { min: '150,00', max: '320,00', desc: 'Reparo de vazamentos, troca de sifões, registros e desentupimentos.' },
+  'Pintura': { min: '350,00', max: '950,00', desc: 'Pintura acrílica interna e externa, massa corrida e impermeabilização.' },
+  'Alvenaria': { min: '300,00', max: '1.200,00', desc: 'Assentamento de pisos, revestimentos, reboco e pequenos reparos.' },
+  'Climatização': { min: '200,00', max: '550,00', desc: 'Instalação de aparelhos split, higienização técnica e recarga de gás.' }
 };
 
 const STATUS_META = {
-  'PENDENTE': { label: 'Aguardando Propostas', cls: 'badge-neutral', step: 1 },
-  'PROPOSTA_RECEBIDA': { label: 'Com Propostas', cls: 'badge-info', step: 2 },
-  'EM_CUSTODIA': { label: 'Em Custódia Escrow', cls: 'badge-warning', step: 3 },
-  'A_CAMINHO': { label: 'Profissional a Caminho', cls: 'badge-info', step: 3 },
-  'EM_EXECUCAO': { label: 'Em Execução', cls: 'badge-info', step: 4 },
-  'AGUARDANDO_VISTORIA': { label: 'Vistoria Pendente', cls: 'badge-warning', step: 4 },
-  'CONCLUIDO': { label: 'Concluído e Pago', cls: 'badge-success', step: 5 },
-  'EM_DISPUTA': { label: 'Em Mediação', cls: 'badge-danger', step: 4 },
-  'CANCELADO': { label: 'Cancelado / Estornado', cls: 'badge-danger', step: 5 }
+  'PENDENTE': { label: 'Aguardando propostas', dot: '', step: 1 },
+  'PROPOSTA_RECEBIDA': { label: 'Proposta recebida', dot: 'dot-accent', step: 2 },
+  'EM_CUSTODIA': { label: 'Retido em custódia', dot: 'dot-accent', step: 3 },
+  'A_CAMINHO': { label: 'Prestador a caminho', dot: 'dot-accent', step: 3 },
+  'EM_EXECUCAO': { label: 'Em execução', dot: 'dot-accent', step: 4 },
+  'AGUARDANDO_VISTORIA': { label: 'Vistoria pendente', dot: 'dot-accent', step: 4 },
+  'CONCLUIDO': { label: 'Liquidado', dot: 'dot-pos', step: 5 },
+  'EM_DISPUTA': { label: 'Em mediação', dot: 'dot-neg', step: 4 },
+  'CANCELADO': { label: 'Estornado', dot: 'dot-neg', step: 5 }
 };
 
-const PAGE_HEADERS = {
-  overview: { title: 'Visão Geral', sub: 'Resumo financeiro e acompanhamento das suas operações' },
-  mural: { title: 'Ordens de Serviço', sub: 'Gerencie solicitações, propostas, vistorias e execuções' },
-  nova: { title: 'Nova Solicitação', sub: 'Descreva o reparo residencial para receber orçamentos' },
-  carteira: { title: 'Carteira Digital & PIX', sub: 'Acompanhe valores em custódia e transfira seu saldo disponível' },
-  prestadores: { title: 'Catálogo de Profissionais', sub: 'Especialistas cadastrados, reputação e portfólio de obras' },
-  escrow: { title: 'Livro-Razão Escrow', sub: 'Histórico auditável de retenções, repasses e estornos' },
-  disputas: { title: 'Mediação de Disputas', sub: 'Acompanhamento e arbitragem técnica de chamados contestados' },
-  notificacoes: { title: 'Central de Mensagens', sub: 'Registro de envios automáticos por WhatsApp e e-mail' },
-  admin: { title: 'Governança & Administração', sub: 'Indicadores de conversão, homologação cadastral e cupons' },
-  perfil: { title: 'Minha Conta & Verificação', sub: 'Dados cadastrais, credenciais e envio de documentação' }
+const PAGE_TITLES = {
+  overview: { crumb: 'Visão geral', title: 'Novembro', sub: '2026' },
+  mural: { crumb: 'Ordens de serviço', title: 'Ordens de serviço', sub: '' },
+  nova: { crumb: 'Solicitar reparo', title: 'Solicitar reparo', sub: '' },
+  carteira: { crumb: 'Carteira PIX', title: 'Carteira PIX', sub: '' },
+  prestadores: { crumb: 'Profissionais', title: 'Profissionais', sub: '' },
+  escrow: { crumb: 'Livro-razão escrow', title: 'Livro-razão', sub: 'Escrow' },
+  disputas: { crumb: 'Disputas', title: 'Mediação de disputas', sub: '' },
+  notificacoes: { crumb: 'Notificações', title: 'Registro de avisos', sub: '' },
+  admin: { crumb: 'Administração', title: 'Governança', sub: 'Plataforma' },
+  perfil: { crumb: 'Minha conta', title: 'Minha conta', sub: '' }
 };
 
 function escapeHtml(str) {
@@ -63,6 +77,10 @@ function moeda(valor) {
   return Number(valor || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
 
+function codigoOrdem(id) {
+  return `OS·${String(id).padStart(4, '0')}`;
+}
+
 function authHeaders() {
   const h = { 'Content-Type': 'application/json' };
   if (state.token) h['Authorization'] = `Bearer ${state.token}`;
@@ -70,25 +88,38 @@ function authHeaders() {
 }
 
 function toast(mensagem, tipo = 'info') {
-  const stack = document.getElementById('toast-stack');
-  if (!stack) return;
+  const region = document.getElementById('toast-region');
+  if (!region) return;
   const el = document.createElement('div');
-  el.className = `toast ${tipo}`;
-  el.textContent = mensagem;
-  stack.appendChild(el);
+  el.className = 'toast-item';
+  const dotCls = tipo === 'success' ? 'dot-pos' : (tipo === 'error' ? 'dot-neg' : 'dot-accent');
+  el.innerHTML = `<span class="dot ${dotCls}"></span><span>${escapeHtml(mensagem)}</span>`;
+  region.appendChild(el);
   setTimeout(() => {
     el.style.opacity = '0';
-    el.style.transition = 'opacity 0.25s';
-    setTimeout(() => el.remove(), 260);
-  }, 3600);
+    el.style.transition = 'opacity 180ms cubic-bezier(0.22, 1, 0.36, 1)';
+    setTimeout(() => el.remove(), 200);
+  }, 3200);
 }
 
 // =========================================================================
-// INICIALIZAÇÃO E ROTEAMENTO DE SESSÃO
+// INICIALIZAÇÃO E ATALHO CTRL+K
 // =========================================================================
 document.addEventListener('DOMContentLoaded', async () => {
   configurarFormulariosFixos();
   atualizarEstimativaPreco();
+
+  document.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+      if (!document.getElementById('view-app').classList.contains('hidden')) {
+        e.preventDefault();
+        navegarApp('mural');
+        setTimeout(() => document.getElementById('filtro-busca')?.focus(), 40);
+      }
+    } else if (e.key === 'Escape') {
+      fecharModal();
+    }
+  });
 
   const appHashes = ['overview', 'mural', 'nova', 'escrow', 'carteira', 'disputas', 'notificacoes', 'prestadores', 'admin', 'perfil'];
   const hashAtual = (window.location.hash || '').replace('#', '');
@@ -101,7 +132,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
-  // Caso abra diretamente uma rota interna (ex: captura automatizada de tela), autentica conta correspondente
   if (appHashes.includes(hashAtual)) {
     const contaAuto = hashAtual === 'admin'
       ? 'admin@freela.com.br'
@@ -141,7 +171,7 @@ function limparSessaoLocal() {
 }
 
 // =========================================================================
-// NAVEGAÇÃO ENTRE LANDING, AUTH E WORKSPACE
+// LANDING & AUTH
 // =========================================================================
 async function carregarDadosLanding() {
   try {
@@ -156,23 +186,27 @@ async function carregarDadosLanding() {
       document.getElementById('land-kpi-ordens').textContent = st.dados.total_ordens;
       document.getElementById('land-kpi-custodia').textContent = moeda(st.dados.saldo_em_custodia);
       document.getElementById('land-kpi-prestadores').textContent = st.dados.prestadores_ativos;
+      document.getElementById('land-live-summary').textContent = `${moeda(st.dados.total_repassado)} liquidados`;
     }
 
     const grid = document.getElementById('landing-prestadores-grid');
     if (grid && pr.sucesso) {
       grid.innerHTML = pr.dados.slice(0, 3).map(p => `
-        <div class="order-card">
+        <div class="warm-panel" style="gap: 16px;">
           <div>
-            <div class="order-meta-top">
-              <span class="badge badge-info">${escapeHtml(p.especialidade || 'Serviços Residenciais')}</span>
-              ${p.verificado === 1 ? '<span class="badge badge-success">Verificado</span>' : '<span class="badge badge-neutral">Em análise</span>'}
+            <div class="order-top">
+              <span class="mono" style="font-size: 12px; color: var(--warm-text-3);">${escapeHtml(p.especialidade || 'Serviços residenciais')}</span>
+              <span class="status-inline">
+                <span class="dot ${p.verificado === 1 ? 'dot-pos' : 'dot-accent'}"></span>
+                ${p.verificado === 1 ? 'Verificado' : 'Em análise'}
+              </span>
             </div>
-            <h3 class="order-title" style="margin-top: 10px;">${escapeHtml(p.nome)}</h3>
-            <p style="font-size: 13px; color: var(--text-secondary);">Avaliação média: <strong>${Number(p.reputacao).toFixed(1)} / 5.0</strong></p>
+            <h3 style="margin-top: 8px; margin-bottom: 4px;">${escapeHtml(p.nome)}</h3>
+            <p style="font-size: 13px;">Nota média <span class="mono">${Number(p.reputacao).toFixed(1)}</span> em avaliações verificadas</p>
           </div>
-          <div class="order-footer">
-            <span style="font-size: 12px; color: var(--text-muted);">${(p.portfolio || []).length} obra(s) no catálogo</span>
-            <button class="btn btn-secondary btn-sm" onclick="irParaAuth('register', 'CLIENTE')">Solicitar Orçamento</button>
+          <div style="padding-top: 12px; border-top: 1px solid var(--warm-hairline); display: flex; justify-content: space-between; align-items: center;">
+            <span class="mono" style="font-size: 12px; color: var(--warm-text-3);">${(p.portfolio || []).length} obra(s) publicada(s)</span>
+            <button type="button" class="link-quiet" style="padding: 0; font-weight: 500; color: var(--warm-text-1);" onclick="irParaAuth('register', 'CLIENTE')">Pedir orçamento</button>
           </div>
         </div>
       `).join('');
@@ -206,8 +240,8 @@ function alternarModoAuth(modo) {
 
 function selecionarPapelCadastro(papel) {
   document.getElementById('reg-papel').value = papel;
-  document.getElementById('opt-role-cliente').classList.toggle('selected', papel === 'CLIENTE');
-  document.getElementById('opt-role-prestador').classList.toggle('selected', papel === 'PRESTADOR');
+  document.getElementById('opt-role-cliente').classList.toggle('active', papel === 'CLIENTE');
+  document.getElementById('opt-role-prestador').classList.toggle('active', papel === 'PRESTADOR');
   document.getElementById('reg-especialidade-group').classList.toggle('hidden', papel !== 'PRESTADOR');
 }
 
@@ -223,13 +257,13 @@ async function loginRapidoDemo(email, paginaDestino = 'overview', silencioso = f
       state.token = json.token;
       state.user = json.dados;
       localStorage.setItem(STORAGE_TOKEN_KEY, json.token);
-      if (!silencioso) toast(`Bem-vindo(a), ${json.dados.nome}`, 'success');
+      if (!silencioso) toast(`Sessão iniciada como ${json.dados.nome}`, 'success');
       await iniciarWorkspace(paginaDestino);
     } else {
-      toast(json.mensagem || 'Falha ao autenticar.', 'error');
+      toast(json.mensagem || 'Credenciais recusadas', 'error');
     }
   } catch {
-    toast('Erro de conexão com o servidor.', 'error');
+    toast('Falha de comunicação com o servidor', 'error');
   }
 }
 
@@ -238,11 +272,11 @@ async function encerrarSessao() {
   window.history.replaceState(null, '', window.location.pathname);
   await carregarDadosLanding();
   mostrarLanding();
-  toast('Sessão encerrada com segurança.');
+  toast('Sessão encerrada');
 }
 
 // =========================================================================
-// WORKSPACE AUTENTICADO E SIDEBAR DINÂMICA POR PAPEL
+// WORKSPACE E SIDEBAR ALINHADA
 // =========================================================================
 async function iniciarWorkspace(paginaInicial = 'overview') {
   document.getElementById('view-landing').classList.add('hidden');
@@ -286,7 +320,7 @@ async function sincronizarDadosBase() {
 
     atualizarResumoUsuarioSidebar();
   } catch (err) {
-    console.error('Erro ao sincronizar dados:', err);
+    console.error(err);
   }
 }
 
@@ -295,8 +329,8 @@ function atualizarResumoUsuarioSidebar() {
   const iniciais = state.user.nome.split(' ').map(p => p[0]).slice(0, 2).join('').toUpperCase();
   document.getElementById('sb-avatar').textContent = iniciais;
   document.getElementById('sb-user-name').textContent = state.user.nome;
-  const labelPapel = { CLIENTE: 'Cliente Residencial', PRESTADOR: 'Profissional Autônomo', ADMIN: 'Administrador' }[state.user.papel] || state.user.papel;
-  document.getElementById('sb-user-role').textContent = labelPapel;
+  const mapPapel = { CLIENTE: 'Cliente residencial', PRESTADOR: 'Profissional autônomo', ADMIN: 'Administração' };
+  document.getElementById('sb-user-role').textContent = mapPapel[state.user.papel] || state.user.papel;
 }
 
 function renderizarSidebar() {
@@ -304,37 +338,38 @@ function renderizarSidebar() {
   const disputasCount = state.ordens.filter(o => o.status === 'EM_DISPUTA').length;
 
   const itensPrincipais = [
-    { id: 'overview', label: 'Visão Geral' },
-    { id: 'mural', label: papel === 'PRESTADOR' ? 'Mural de Chamados' : 'Ordens de Serviço', count: state.ordens.length }
+    { id: 'overview', label: 'Visão geral', icon: ICONS.overview },
+    { id: 'mural', label: papel === 'PRESTADOR' ? 'Mural de chamados' : 'Ordens de serviço', icon: ICONS.mural, count: state.ordens.length }
   ];
 
   if (papel === 'CLIENTE') {
-    itensPrincipais.push({ id: 'nova', label: 'Solicitar Reparo' });
-    itensPrincipais.push({ id: 'prestadores', label: 'Profissionais' });
+    itensPrincipais.push({ id: 'nova', label: 'Solicitar reparo', icon: ICONS.nova });
+    itensPrincipais.push({ id: 'prestadores', label: 'Profissionais', icon: ICONS.prestadores });
   } else if (papel === 'PRESTADOR') {
-    itensPrincipais.push({ id: 'carteira', label: 'Carteira & PIX' });
-    itensPrincipais.push({ id: 'prestadores', label: 'Meu Portfólio' });
+    itensPrincipais.push({ id: 'carteira', label: 'Carteira PIX', icon: ICONS.carteira });
+    itensPrincipais.push({ id: 'prestadores', label: 'Meu portfólio', icon: ICONS.prestadores });
   } else if (papel === 'ADMIN') {
-    itensPrincipais.push({ id: 'admin', label: 'Painel Executivo' });
-    itensPrincipais.push({ id: 'prestadores', label: 'Profissionais' });
+    itensPrincipais.push({ id: 'admin', label: 'Governança', icon: ICONS.admin });
+    itensPrincipais.push({ id: 'prestadores', label: 'Profissionais', icon: ICONS.prestadores });
   }
 
   const itensSecundarios = [
-    { id: 'escrow', label: 'Livro-Razão Escrow', count: state.transacoes.length },
-    { id: 'disputas', label: 'Disputas & Mediação', count: disputasCount || null },
-    { id: 'notificacoes', label: 'Notificações', count: state.notificacoes.length },
-    { id: 'perfil', label: 'Minha Conta' }
+    { id: 'escrow', label: 'Livro-razão escrow', icon: ICONS.escrow, count: state.transacoes.length },
+    { id: 'disputas', label: 'Disputas', icon: ICONS.disputas, count: disputasCount || null },
+    { id: 'notificacoes', label: 'Notificações', icon: ICONS.notificacoes, count: state.notificacoes.length },
+    { id: 'perfil', label: 'Minha conta', icon: ICONS.perfil }
   ];
 
-  const montarBotao = (item) => `
-    <button class="nav-item ${state.page === item.id ? 'active' : ''}" id="nav-${item.id}" onclick="navegarApp('${item.id}')">
-      <span class="nav-item-left">${escapeHtml(item.label)}</span>
-      ${item.count ? `<span class="nav-count">${item.count}</span>` : ''}
+  const renderRow = (it) => `
+    <button type="button" class="nav-row ${state.page === it.id ? 'active' : ''}" onclick="navegarApp('${it.id}')">
+      ${it.icon}
+      <span class="nav-row-label">${escapeHtml(it.label)}</span>
+      ${it.count ? `<span class="nav-row-count">${it.count}</span>` : ''}
     </button>
   `;
 
-  document.getElementById('sidebar-nav-main').innerHTML = itensPrincipais.map(montarBotao).join('');
-  document.getElementById('sidebar-nav-secondary').innerHTML = itensSecundarios.map(montarBotao).join('');
+  document.getElementById('sidebar-nav-main').innerHTML = itensPrincipais.map(renderRow).join('');
+  document.getElementById('sidebar-nav-secondary').innerHTML = itensSecundarios.map(renderRow).join('');
 }
 
 async function navegarApp(pagina) {
@@ -343,7 +378,8 @@ async function navegarApp(pagina) {
   const alvo = document.getElementById(`sec-${pagina}`);
   if (alvo) alvo.classList.remove('hidden');
 
-  const meta = PAGE_HEADERS[pagina] || PAGE_HEADERS.overview;
+  const meta = PAGE_TITLES[pagina] || PAGE_TITLES.overview;
+  document.getElementById('page-breadcrumb').textContent = meta.crumb;
   document.getElementById('page-title').textContent = meta.title;
   document.getElementById('page-subtitle').textContent = meta.sub;
 
@@ -364,130 +400,270 @@ async function navegarApp(pagina) {
 function renderizarTopbarActions(pagina) {
   const box = document.getElementById('topbar-actions');
   if (!state.user) return;
-  const selo = state.user.verificado === 1
-    ? '<span class="badge badge-success">Conta Verificada</span>'
-    : '<span class="badge badge-warning" style="cursor:pointer" onclick="navegarApp(\'perfil\')">Verificação Pendente</span>';
+  const verifHtml = state.user.verificado === 1
+    ? '<span class="status-inline"><span class="dot dot-pos"></span>Conta verificada</span>'
+    : '<span class="status-inline" style="cursor:pointer" onclick="navegarApp(\'perfil\')"><span class="dot dot-accent"></span>Verificação pendente</span>';
 
   let cta = '';
   if (state.user.papel === 'CLIENTE' && pagina !== 'nova') {
-    cta = '<button class="btn btn-primary btn-sm" onclick="navegarApp(\'nova\')">+ Solicitar Reparo</button>';
+    cta = '<button type="button" class="btn btn-primary btn-sm" onclick="navegarApp(\'nova\')">Solicitar reparo</button>';
   } else if (state.user.papel === 'PRESTADOR' && pagina === 'prestadores') {
-    cta = '<button class="btn btn-primary btn-sm" onclick="abrirModalPortfolio()">+ Adicionar Obra ao Portfólio</button>';
+    cta = '<button type="button" class="btn btn-primary btn-sm" onclick="abrirModalPortfolio()">Adicionar obra</button>';
   } else if (state.user.papel === 'PRESTADOR' && pagina !== 'carteira') {
-    cta = `<button class="btn btn-secondary btn-sm" onclick="navegarApp('carteira')">Saldo: ${moeda(state.user.saldo_disponivel)}</button>`;
+    cta = `<button type="button" class="btn btn-secondary btn-sm mono" onclick="navegarApp('carteira')">${moeda(state.user.saldo_disponivel)}</button>`;
   }
 
-  box.innerHTML = `${selo}${cta}`;
+  box.innerHTML = `${verifHtml}${cta}`;
 }
 
 // =========================================================================
-// RENDERIZAÇÃO DE PÁGINAS DO WORKSPACE
+// VISÃO GERAL: OBJETO RENDERIZADO + GRÁFICO SVG SÓBRIO + LISTA COMPACTA
 // =========================================================================
 function renderizarOverview() {
   const u = state.user;
   const kpiBox = document.getElementById('overview-kpis');
+  const ordemAtivaRef = state.ordens.find(o => ['EM_CUSTODIA', 'A_CAMINHO', 'EM_EXECUCAO', 'AGUARDANDO_VISTORIA'].includes(o.status)) || state.ordens[0];
+  const slipValor = ordemAtivaRef && ordemAtivaRef.valor_total > 0 ? moeda(ordemAtivaRef.valor_total) : moeda(state.stats.saldo_em_custodia);
+  const slipCodigo = ordemAtivaRef ? codigoOrdem(ordemAtivaRef.id) : 'OS·0001';
+
+  const objetoEscrowHtml = `
+    <div class="escrow-slip-object" aria-hidden="true">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <div class="slip-chip"></div>
+        <span class="slip-code">ESCROW</span>
+      </div>
+      <div>
+        <div class="tabular" style="font-size: 12px; font-weight: 500;">${slipValor}</div>
+        <div class="slip-code">${slipCodigo} · PIX</div>
+      </div>
+    </div>
+  `;
 
   if (u.papel === 'CLIENTE') {
     const minhas = state.ordens.filter(o => o.cliente_id === u.id);
     const ativas = minhas.filter(o => ['EM_CUSTODIA', 'A_CAMINHO', 'EM_EXECUCAO', 'AGUARDANDO_VISTORIA'].includes(o.status));
     const vistoria = minhas.filter(o => o.status === 'AGUARDANDO_VISTORIA').length;
+    const concluidas = minhas.filter(o => o.status === 'CONCLUIDO').length;
     const custodiaCliente = ativas.reduce((acc, o) => acc + Number(o.valor_total || 0), 0);
 
     kpiBox.innerHTML = `
-      <div class="kpi-card"><div class="kpi-label">Meus Chamados</div><div class="kpi-value">${minhas.length}</div><div class="kpi-sub">Total solicitados na conta</div></div>
-      <div class="kpi-card"><div class="kpi-label">Protegido em Custódia</div><div class="kpi-value">${moeda(custodiaCliente)}</div><div class="kpi-sub">Retido até sua aprovação</div></div>
-      <div class="kpi-card"><div class="kpi-label">Aguardando sua Vistoria</div><div class="kpi-value">${vistoria}</div><div class="kpi-sub">Prontos para homologação</div></div>
-      <div class="kpi-card"><div class="kpi-label">Profissionais Ativos</div><div class="kpi-value">${state.prestadores.length}</div><div class="kpi-sub">Disponíveis na região</div></div>
+      <div class="stat-card has-object">
+        <div class="stat-label">Protegido em custódia</div>
+        <div class="stat-figure">${moeda(custodiaCliente)}</div>
+        <div class="stat-delta"><span class="acc">${ativas.length} ativas</span> · ${concluidas} liquidada</div>
+        ${objetoEscrowHtml}
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Vistorias pendentes</div>
+        <div class="stat-figure">${vistoria}</div>
+        <div class="stat-delta">Aguardando sua inspeção</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Meus chamados</div>
+        <div class="stat-figure">${minhas.length}</div>
+        <div class="stat-delta"><span class="pos">${concluidas} liquidado(s)</span> no histórico</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Profissionais na região</div>
+        <div class="stat-figure">${state.prestadores.length}</div>
+        <div class="stat-delta">Cadastro ativo em Volta Redonda</div>
+      </div>
     `;
   } else if (u.papel === 'PRESTADOR') {
     const abertas = state.ordens.filter(o => ['PENDENTE', 'PROPOSTA_RECEBIDA'].includes(o.status)).length;
     const assumidas = state.ordens.filter(o => o.prestador_id === u.id);
 
     kpiBox.innerHTML = `
-      <div class="kpi-card"><div class="kpi-label">Saldo Disponível (PIX)</div><div class="kpi-value">${moeda(u.saldo_disponivel)}</div><div class="kpi-sub">Liberado para transferência</div></div>
-      <div class="kpi-card"><div class="kpi-label">Garantido em Escrow</div><div class="kpi-value">${moeda(u.saldo_custodia)}</div><div class="kpi-sub">Reservado em obras ativas</div></div>
-      <div class="kpi-card"><div class="kpi-label">Oportunidades Abertas</div><div class="kpi-value">${abertas}</div><div class="kpi-sub">Aguardando orçamento</div></div>
-      <div class="kpi-card"><div class="kpi-label">Sua Reputação</div><div class="kpi-value">${Number(u.reputacao).toFixed(1)} / 5.0</div><div class="kpi-sub">${assumidas.length} serviço(s) vinculado(s)</div></div>
+      <div class="stat-card has-object">
+        <div class="stat-label">Disponível para PIX</div>
+        <div class="stat-figure">${moeda(u.saldo_disponivel)}</div>
+        <div class="stat-delta"><span class="pos">Liberado</span> pós-vistoria</div>
+        ${objetoEscrowHtml}
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Reservado em custódia</div>
+        <div class="stat-figure">${moeda(u.saldo_custodia)}</div>
+        <div class="stat-delta"><span class="acc">Garantido</span> antes da visita</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Chamados para orçar</div>
+        <div class="stat-figure">${abertas}</div>
+        <div class="stat-delta">Abertos no mural da região</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Nota média</div>
+        <div class="stat-figure">${Number(u.reputacao).toFixed(1)}</div>
+        <div class="stat-delta">Em ${assumidas.length} serviço(s) atendido(s)</div>
+      </div>
     `;
   } else {
     kpiBox.innerHTML = `
-      <div class="kpi-card"><div class="kpi-label">Total de Ordens</div><div class="kpi-value">${state.stats.total_ordens || 0}</div><div class="kpi-sub">Registradas na plataforma</div></div>
-      <div class="kpi-card"><div class="kpi-label">Volume em Custódia</div><div class="kpi-value">${moeda(state.stats.saldo_em_custodia)}</div><div class="kpi-sub">Bloqueado em garantia</div></div>
-      <div class="kpi-card"><div class="kpi-label">Total Liquidado</div><div class="kpi-value">${moeda(state.stats.total_repassado)}</div><div class="kpi-sub">Repassado pós-vistoria</div></div>
-      <div class="kpi-card"><div class="kpi-label">Usuários Cadastrados</div><div class="kpi-value">${state.usuarios.length}</div><div class="kpi-sub">Clientes, prestadores e suporte</div></div>
+      <div class="stat-card has-object">
+        <div class="stat-label">Saldo sob custódia</div>
+        <div class="stat-figure">${moeda(state.stats.saldo_em_custodia)}</div>
+        <div class="stat-delta"><span class="acc">Retido</span> em contas vinculadas</div>
+        ${objetoEscrowHtml}
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Repasses liquidados</div>
+        <div class="stat-figure">${moeda(state.stats.total_repassado)}</div>
+        <div class="stat-delta"><span class="pos">${state.stats.ordens_concluidas || 0} ordens</span> homologadas</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Total de chamados</div>
+        <div class="stat-figure">${state.stats.total_ordens || 0}</div>
+        <div class="stat-delta">Registrados no banco</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Contas ativas</div>
+        <div class="stat-figure">${state.usuarios.length}</div>
+        <div class="stat-delta">${state.prestadores.length} prestadores cadastrados</div>
+      </div>
     `;
   }
 
-  const recentes = state.ordens.slice(0, 4);
-  document.getElementById('overview-orders-list').innerHTML = recentes.map(montarCardOrdemHtml).join('');
+  renderizarGraficoOverview();
+
+  const recentes = state.ordens.slice(0, 5);
+  document.getElementById('overview-orders-list').innerHTML = recentes.map(o => {
+    const meta = STATUS_META[o.status] || { label: o.status, dot: '' };
+    return `
+      <div class="compact-order-row" onclick="abrirModalDetalhes(${o.id})">
+        <div style="min-width: 0;">
+          <div style="font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(o.titulo)}</div>
+          <div class="status-inline" style="margin-top: 2px;">
+            <span class="dot ${meta.dot}"></span>
+            <span>${meta.label}</span>
+            <span class="mono" style="color: var(--text-3);">· ${codigoOrdem(o.id)}</span>
+          </div>
+        </div>
+        <span class="mono" style="font-size: 13px; color: var(--text-1); flex-shrink: 0;">
+          ${o.valor_total > 0 ? moeda(o.valor_total) : 'Aberto'}
+        </span>
+      </div>
+    `;
+  }).join('');
 }
 
+function renderizarGraficoOverview() {
+  const box = document.getElementById('overview-chart');
+  if (!box) return;
+
+  const ordensComValor = [...state.ordens].reverse().slice(-6);
+  const maxVal = Math.max(400, ...ordensComValor.map(o => Number(o.valor_total || 180)));
+  const teto = Math.ceil(maxVal / 100) * 100;
+
+  const w = 640;
+  const h = 240;
+  const padL = 68;
+  const padR = 16;
+  const padT = 16;
+  const padB = 32;
+  const plotW = w - padL - padR;
+  const plotH = h - padT - padB;
+
+  const linhasGrade = [0, 0.5, 1].map(f => {
+    const y = padT + plotH * (1 - f);
+    const val = Math.round(teto * f);
+    return `
+      <line x1="${padL}" y1="${y}" x2="${w - padR}" y2="${y}" stroke="rgba(23,23,23,0.07)" stroke-width="1"/>
+      <text x="${padL - 10}" y="${y + 4}" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="11" fill="#737373">R$ ${val}</text>
+    `;
+  }).join('');
+
+  const slotW = plotW / Math.max(1, ordensComValor.length);
+  const barW = Math.min(40, slotW * 0.46);
+
+  const barras = ordensComValor.map((o, idx) => {
+    const val = Number(o.valor_total || 0);
+    const barH = val > 0 ? Math.max(6, (val / teto) * plotH) : 4;
+    const x = padL + idx * slotW + (slotW - barW) / 2;
+    const y = padT + plotH - barH;
+    const emCustodia = ['EM_CUSTODIA', 'A_CAMINHO', 'EM_EXECUCAO', 'AGUARDANDO_VISTORIA'].includes(o.status);
+    const fill = emCustodia ? '#b45309' : (o.status === 'CONCLUIDO' ? '#d4d4d8' : '#e4e4e7');
+    return `
+      <rect x="${x}" y="${y}" width="${barW}" height="${barH}" rx="4" fill="${fill}"/>
+      <text x="${x + barW / 2}" y="${h - 10}" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" fill="#737373">${codigoOrdem(o.id)}</text>
+    `;
+  }).join('');
+
+  document.getElementById('chart-subtitle').textContent = `${moeda(state.stats.saldo_em_custodia)} retidos · ${moeda(state.stats.total_repassado)} liquidados`;
+
+  box.innerHTML = `
+    <svg viewBox="0 0 ${w} ${h}" width="100%" height="100%" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Gráfico de valores por ordem de serviço">
+      ${linhasGrade}
+      ${barras}
+    </svg>
+  `;
+}
+
+// =========================================================================
+// ORDENS, CARTEIRA, PROFISSIONAIS, LIVRO-RAZÃO, ADMIN E PERFIL
+// =========================================================================
 function montarCardOrdemHtml(o) {
-  const meta = STATUS_META[o.status] || { label: o.status, cls: 'badge-neutral', step: 1 };
+  const meta = STATUS_META[o.status] || { label: o.status, dot: '', step: 1 };
   const segs = [1, 2, 3, 4, 5].map(n => {
-    const cls = o.status === 'CONCLUIDO' ? 'completed' : (n <= meta.step ? 'done' : '');
-    return `<div class="stepper-seg ${cls}"></div>`;
+    const cls = o.status === 'CONCLUIDO' ? 'settled' : (n <= meta.step ? 'filled' : '');
+    return `<div class="lock-seg ${cls}"></div>`;
   }).join('');
 
   const papel = state.user ? state.user.papel : 'CLIENTE';
   const isDonoCliente = state.user && o.cliente_id === state.user.id;
   const isPrestadorOrdem = state.user && o.prestador_id === state.user.id;
 
-  let botoes = `<button class="btn btn-secondary btn-sm" onclick="abrirModalDetalhes(${o.id})">Detalhes</button>`;
+  let acoes = `<button type="button" class="btn btn-secondary btn-sm" onclick="abrirModalDetalhes(${o.id})">Detalhes</button>`;
 
   if (papel === 'CLIENTE' && isDonoCliente) {
     if (o.status === 'PENDENTE' || o.status === 'PROPOSTA_RECEBIDA') {
-      botoes = `<button class="btn btn-primary btn-sm" onclick="abrirModalDetalhes(${o.id})">Propostas (${o.total_propostas || 0})</button>`;
+      acoes = `<button type="button" class="btn btn-primary btn-sm" onclick="abrirModalDetalhes(${o.id})">Propostas (${o.total_propostas || 0})</button>`;
     } else if (o.status === 'AGUARDANDO_VISTORIA') {
-      botoes = `
-        <button class="btn btn-danger btn-sm" onclick="abrirModalDisputa(${o.id})">Contestar</button>
-        <button class="btn btn-success btn-sm" onclick="abrirModalAprovacao(${o.id})">Aprovar Vistoria</button>
+      acoes = `
+        <button type="button" class="btn btn-danger-quiet btn-sm" onclick="abrirModalDisputa(${o.id})">Contestar</button>
+        <button type="button" class="btn btn-accent btn-sm" onclick="abrirModalAprovacao(${o.id})">Aprovar vistoria</button>
       `;
     } else if (['EM_CUSTODIA', 'A_CAMINHO', 'EM_EXECUCAO'].includes(o.status)) {
-      botoes = `
-        <button class="btn btn-secondary btn-sm" onclick="abrirModalDetalhes(${o.id})">Acompanhar</button>
-        <button class="btn btn-danger btn-sm" onclick="abrirModalDisputa(${o.id})">Disputa</button>
+      acoes = `
+        <button type="button" class="btn btn-secondary btn-sm" onclick="abrirModalDetalhes(${o.id})">Detalhes</button>
+        <button type="button" class="btn btn-danger-quiet btn-sm" onclick="abrirModalDisputa(${o.id})">Disputa</button>
       `;
     }
   } else if (papel === 'PRESTADOR') {
     if (o.status === 'PENDENTE' || o.status === 'PROPOSTA_RECEBIDA') {
-      botoes = `<button class="btn btn-primary btn-sm" onclick="abrirModalProposta(${o.id})">Enviar Orçamento</button>`;
+      acoes = `<button type="button" class="btn btn-primary btn-sm" onclick="abrirModalProposta(${o.id})">Enviar proposta</button>`;
     } else if (isPrestadorOrdem) {
       if (o.status === 'EM_CUSTODIA') {
-        botoes = `<button class="btn btn-accent btn-sm" onclick="atualizarStatusOrdem(${o.id}, 'A_CAMINHO')">Marcar A Caminho</button>`;
+        acoes = `<button type="button" class="btn btn-primary btn-sm" onclick="atualizarStatusOrdem(${o.id}, 'A_CAMINHO')">Iniciar deslocamento</button>`;
       } else if (o.status === 'A_CAMINHO') {
-        botoes = `<button class="btn btn-accent btn-sm" onclick="atualizarStatusOrdem(${o.id}, 'EM_EXECUCAO')">Iniciar Execução</button>`;
+        acoes = `<button type="button" class="btn btn-primary btn-sm" onclick="atualizarStatusOrdem(${o.id}, 'EM_EXECUCAO')">Iniciar reparo</button>`;
       } else if (o.status === 'EM_EXECUCAO') {
-        botoes = `<button class="btn btn-success btn-sm" onclick="abrirModalConclusaoPrestador(${o.id})">Solicitar Vistoria</button>`;
+        acoes = `<button type="button" class="btn btn-accent btn-sm" onclick="abrirModalConclusaoPrestador(${o.id})">Solicitar vistoria</button>`;
       } else if (o.status === 'CONCLUIDO') {
-        botoes = `<button class="btn btn-secondary btn-sm" onclick="abrirModalAvaliarCliente(${o.id})">Avaliar Cliente</button>`;
+        acoes = `<button type="button" class="btn btn-secondary btn-sm" onclick="abrirModalAvaliarCliente(${o.id})">Avaliar cliente</button>`;
       }
     }
   } else if (papel === 'ADMIN' && o.status === 'EM_DISPUTA') {
-    botoes = `<button class="btn btn-primary btn-sm" onclick="abrirModalArbitragem(${o.id})">Arbitrar Caso</button>`;
+    acoes = `<button type="button" class="btn btn-primary btn-sm" onclick="abrirModalArbitragem(${o.id})">Arbitrar</button>`;
   }
 
   return `
-    <article class="order-card">
+    <article class="order-item">
       <div>
-        <div class="order-meta-top">
-          <span class="badge badge-neutral">OS #${o.id} · ${escapeHtml(o.categoria)}</span>
-          <span class="badge ${meta.cls}">${meta.label}</span>
+        <div class="order-top">
+          <span class="order-code">${codigoOrdem(o.id)} · ${escapeHtml(o.categoria)}</span>
+          <span class="status-inline"><span class="dot ${meta.dot}"></span>${meta.label}</span>
         </div>
-        <h3 class="order-title">${escapeHtml(o.titulo)}</h3>
-        <p class="order-desc">${escapeHtml(o.descricao)}</p>
-        <p style="font-size: 12px; color: var(--text-muted); margin-top: 8px;">
-          Local: ${escapeHtml(o.endereco)} (${escapeHtml(o.cep)})
-        </p>
-        <div class="stepper-bar">${segs}</div>
+        <h3 class="order-name">${escapeHtml(o.titulo)}</h3>
+        <p class="order-body">${escapeHtml(o.descricao)}</p>
+        <div class="order-loc">${escapeHtml(o.endereco)} · <span class="mono">${escapeHtml(o.cep)}</span></div>
+        <div class="lock-track">${segs}</div>
       </div>
 
-      <div class="order-footer">
+      <div class="order-bottom">
         <div>
-          <span style="font-size: 11px; color: var(--text-muted); display: block;">${o.valor_total > 0 ? 'Total em custódia' : 'Orçamento'}</span>
-          <span class="price-tag">${o.valor_total > 0 ? moeda(o.valor_total) : 'Em aberto'}</span>
+          <span style="display: block; font-size: 12px; color: var(--text-3);">${o.valor_total > 0 ? 'Custódia' : 'Orçamento'}</span>
+          <span class="order-amount">${o.valor_total > 0 ? moeda(o.valor_total) : 'Aberto'}</span>
         </div>
-        <div style="display: flex; gap: 6px; flex-wrap: wrap;">${botoes}</div>
+        <div style="display: flex; gap: 8px;">${acoes}</div>
       </div>
     </article>
   `;
@@ -502,7 +678,7 @@ function renderizarMuralOrdens() {
     if (statusF && o.status !== statusF) return false;
     if (catF && o.categoria !== catF) return false;
     if (busca) {
-      const alvo = `${o.titulo} ${o.descricao} ${o.cep} ${o.endereco} ${o.categoria}`.toLowerCase();
+      const alvo = `${o.titulo} ${o.descricao} ${o.cep} ${o.endereco} ${o.categoria} ${codigoOrdem(o.id)}`.toLowerCase();
       if (!alvo.includes(busca)) return false;
     }
     return true;
@@ -510,7 +686,7 @@ function renderizarMuralOrdens() {
 
   const container = document.getElementById('orders-container');
   if (filtradas.length === 0) {
-    container.innerHTML = `<div class="panel-card" style="grid-column: 1 / -1; text-align: center; color: var(--text-muted);">Nenhuma ordem encontrada para os filtros selecionados.</div>`;
+    container.innerHTML = `<div class="card-surface" style="grid-column: 1 / -1; color: var(--text-3);">Nenhuma ordem corresponde aos filtros informados.</div>`;
     return;
   }
   container.innerHTML = filtradas.map(montarCardOrdemHtml).join('');
@@ -526,25 +702,32 @@ function renderizarPrestadores() {
   const box = document.getElementById('prestadores-container');
   box.innerHTML = state.prestadores.map(p => {
     const obras = (p.portfolio || []).map(item => `
-      <div style="margin-top: 8px; padding: 10px; background: var(--bg-page); border: 1px solid var(--border); border-radius: var(--radius-sm);">
-        <strong style="font-size: 12.5px;">${escapeHtml(item.titulo)}</strong>
-        <span class="badge badge-neutral" style="margin-left: 6px;">${escapeHtml(item.categoria)}</span>
-        <p style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">${escapeHtml(item.descricao || '')}</p>
+      <div style="margin-top: 8px; padding: 10px 12px; background: var(--bg-page); border: 1px solid var(--hairline); border-radius: var(--r-control);">
+        <div style="display:flex; justify-content:space-between; font-size: 13px;">
+          <span style="font-weight: 500;">${escapeHtml(item.titulo)}</span>
+          <span style="color: var(--text-3); font-size: 12px;">${escapeHtml(item.categoria)}</span>
+        </div>
+        <p style="font-size: 12px; color: var(--text-2); margin-top: 4px;">${escapeHtml(item.descricao || '')}</p>
       </div>
     `).join('');
 
     return `
-      <div class="order-card">
+      <div class="order-item">
         <div>
-          <div class="order-meta-top">
-            <span class="badge badge-info">${escapeHtml(p.especialidade || 'Serviços Gerais')}</span>
-            ${p.verificado === 1 ? '<span class="badge badge-success">Perfil Verificado</span>' : '<span class="badge badge-warning">Em Homologação</span>'}
+          <div class="order-top">
+            <span class="order-code">${escapeHtml(p.especialidade || 'Serviços gerais')}</span>
+            <span class="status-inline">
+              <span class="dot ${p.verificado === 1 ? 'dot-pos' : 'dot-accent'}"></span>
+              ${p.verificado === 1 ? 'Verificado' : 'Em análise'}
+            </span>
           </div>
-          <h3 class="order-title" style="margin-top: 10px;">${escapeHtml(p.nome)}</h3>
-          <p style="font-size: 13px; color: var(--text-secondary);">Reputação: <strong>${Number(p.reputacao).toFixed(1)} / 5.0</strong> · Contato: ${escapeHtml(p.telefone || '-')}</p>
-          <div style="margin-top: 12px;">
-            <strong style="font-size: 12px; color: var(--text-muted); text-transform: uppercase;">Portfólio Técnico (${(p.portfolio || []).length})</strong>
-            ${obras || '<p style="font-size: 12.5px; color: var(--text-light); margin-top: 6px;">Nenhuma obra cadastrada até o momento.</p>'}
+          <h3 class="order-name">${escapeHtml(p.nome)}</h3>
+          <div style="font-size: 13px; color: var(--text-2);">
+            Nota <span class="mono">${Number(p.reputacao).toFixed(1)}</span> · <span class="mono">${escapeHtml(p.telefone || '-')}</span>
+          </div>
+          <div style="margin-top: 16px;">
+            <div style="font-size: 12px; color: var(--text-3);">Obras publicadas (${(p.portfolio || []).length})</div>
+            ${obras || '<div style="font-size: 13px; color: var(--text-3); margin-top: 6px;">Sem registros de obra até o momento</div>'}
           </div>
         </div>
       </div>
@@ -555,20 +738,25 @@ function renderizarPrestadores() {
 function renderizarTransacoes() {
   const tbody = document.getElementById('transacoes-tbody');
   if (state.transacoes.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:var(--text-muted);">Nenhuma movimentação registrada.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7" style="color:var(--text-3);">Nenhuma transação registrada</td></tr>`;
     return;
   }
+  const mapOp = {
+    BLOQUEIO_ESCROW: { label: 'Bloqueio em custódia', dot: 'dot-accent' },
+    LIBERACAO_REPASSE: { label: 'Liberação de repasse', dot: 'dot-pos' },
+    ESTORNO_DISPUTA: { label: 'Estorno / disputa', dot: 'dot-neg' }
+  };
   tbody.innerHTML = state.transacoes.map(t => {
-    const cls = t.tipo === 'LIBERACAO_REPASSE' ? 'badge-success' : (t.tipo === 'BLOQUEIO_ESCROW' ? 'badge-warning' : 'badge-danger');
+    const op = mapOp[t.tipo] || { label: t.tipo, dot: '' };
     return `
       <tr>
-        <td><strong>#${t.id}</strong></td>
-        <td style="color: var(--text-muted); font-size: 12px;">${t.criado_em ? new Date(t.criado_em).toLocaleString('pt-BR') : '-'}</td>
-        <td>OS #${t.ordem_id} · ${escapeHtml(t.ordem_titulo || '')}</td>
-        <td><span class="badge ${cls}">${escapeHtml(t.tipo)}</span></td>
-        <td><strong>${moeda(t.valor)}</strong></td>
-        <td><span class="badge badge-neutral">${escapeHtml(t.status)}</span></td>
-        <td style="color: var(--text-secondary); max-width: 320px;">${escapeHtml(t.detalhes || '')}</td>
+        <td class="mono">#${String(t.id).padStart(3, '0')}</td>
+        <td class="mono" style="font-size: 12px; color: var(--text-3);">${t.criado_em ? new Date(t.criado_em).toLocaleString('pt-BR') : '-'}</td>
+        <td><span class="mono">${codigoOrdem(t.ordem_id)}</span> · ${escapeHtml(t.ordem_titulo || '')}</td>
+        <td><span class="status-inline"><span class="dot ${op.dot}"></span>${op.label}</span></td>
+        <td style="color: var(--text-2); font-size: 12px;">${escapeHtml(t.status)}</td>
+        <td style="color: var(--text-2); max-width: 320px;">${escapeHtml(t.detalhes || '')}</td>
+        <td class="align-right mono">${moeda(t.valor)}</td>
       </tr>
     `;
   }).join('');
@@ -578,25 +766,25 @@ function renderizarDisputas() {
   const disputas = state.ordens.filter(o => o.status === 'EM_DISPUTA');
   const box = document.getElementById('disputas-container');
   if (disputas.length === 0) {
-    box.innerHTML = `<div class="panel-card" style="grid-column: 1 / -1; text-align: center; color: var(--text-muted);">Nenhuma ordem em disputa no momento. Todos os contratos seguem dentro da conformidade.</div>`;
+    box.innerHTML = `<div class="card-surface" style="grid-column: 1 / -1; color: var(--text-3);">Nenhuma ordem em mediação neste momento</div>`;
     return;
   }
   box.innerHTML = disputas.map(o => `
-    <div class="order-card">
+    <div class="order-item">
       <div>
-        <div class="order-meta-top">
-          <span class="badge badge-danger">Custódia Congelada</span>
-          <span style="font-size: 12px; color: var(--text-muted);">OS #${o.id}</span>
+        <div class="order-top">
+          <span class="order-code">${codigoOrdem(o.id)}</span>
+          <span class="status-inline"><span class="dot dot-neg"></span>Custódia congelada</span>
         </div>
-        <h3 class="order-title">${escapeHtml(o.titulo)}</h3>
-        <p class="order-desc">${escapeHtml(o.descricao)}</p>
-        <p style="font-size: 12.5px; color: var(--text-secondary); margin-top: 8px;">Cliente: <strong>${escapeHtml(o.cliente_nome)}</strong> · Valor retido: <strong>${moeda(o.valor_total)}</strong></p>
+        <h3 class="order-name">${escapeHtml(o.titulo)}</h3>
+        <p class="order-body">${escapeHtml(o.descricao)}</p>
+        <div class="order-loc">Titular: ${escapeHtml(o.cliente_nome)}</div>
       </div>
-      <div class="order-footer">
-        <span style="font-size: 12px; color: var(--text-muted);">Aguardando decisão técnica</span>
+      <div class="order-bottom">
+        <span class="order-amount">${moeda(o.valor_total)}</span>
         ${state.user && state.user.papel === 'ADMIN'
-          ? `<button class="btn btn-primary btn-sm" onclick="abrirModalArbitragem(${o.id})">Emitir Decisão</button>`
-          : `<button class="btn btn-secondary btn-sm" onclick="abrirModalDetalhes(${o.id})">Ver Detalhes</button>`}
+          ? `<button type="button" class="btn btn-primary btn-sm" onclick="abrirModalArbitragem(${o.id})">Decidir caso</button>`
+          : `<button type="button" class="btn btn-secondary btn-sm" onclick="abrirModalDetalhes(${o.id})">Ver ordem</button>`}
       </div>
     </div>
   `).join('');
@@ -605,18 +793,18 @@ function renderizarDisputas() {
 function renderizarNotificacoes() {
   const tbody = document.getElementById('notificacoes-tbody');
   if (state.notificacoes.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:var(--text-muted);">Nenhum disparo registrado.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7" style="color:var(--text-3);">Nenhum aviso enviado</td></tr>`;
     return;
   }
   tbody.innerHTML = state.notificacoes.map(n => `
     <tr>
-      <td><strong>#${n.id}</strong></td>
-      <td style="font-size: 12px; color: var(--text-muted);">${n.criado_em ? new Date(n.criado_em).toLocaleString('pt-BR') : '-'}</td>
-      <td><span class="badge ${n.canal === 'WHATSAPP' ? 'badge-success' : 'badge-info'}">${escapeHtml(n.canal)}</span></td>
-      <td style="font-family: monospace; font-size: 12px;">${escapeHtml(n.destinatario)}</td>
+      <td class="mono">#${String(n.id).padStart(3, '0')}</td>
+      <td class="mono" style="font-size: 12px; color: var(--text-3);">${n.criado_em ? new Date(n.criado_em).toLocaleString('pt-BR') : '-'}</td>
+      <td><span class="status-inline"><span class="dot ${n.canal === 'WHATSAPP' ? 'dot-pos' : 'dot-accent'}"></span>${n.canal === 'WHATSAPP' ? 'WhatsApp' : 'E-mail'}</span></td>
+      <td class="mono" style="font-size: 12px;">${escapeHtml(n.destinatario)}</td>
       <td>${escapeHtml(n.usuario_nome || 'Sistema')}</td>
-      <td style="max-width: 360px;">${escapeHtml(n.mensagem)}</td>
-      <td><span class="badge badge-neutral">${escapeHtml(n.status)}</span></td>
+      <td style="max-width: 360px; color: var(--text-2);">${escapeHtml(n.mensagem)}</td>
+      <td style="font-size: 12px; color: var(--text-3);">${escapeHtml(n.status)}</td>
     </tr>
   `).join('');
 }
@@ -627,36 +815,35 @@ async function renderizarPainelAdmin() {
   if (json.sucesso) {
     const m = json.dados;
     document.getElementById('admin-metrics-grid').innerHTML = `
-      <div class="kpi-card"><div class="kpi-label">Taxa de Conversão</div><div class="kpi-value">${m.taxa_conversao_percentual}%</div><div class="kpi-sub">${m.ordens_concluidas} concluídas de ${m.total_ordens}</div></div>
-      <div class="kpi-card"><div class="kpi-label">Ticket Médio</div><div class="kpi-value">${moeda(m.ticket_medio)}</div><div class="kpi-sub">Por ordem contratada</div></div>
-      <div class="kpi-card"><div class="kpi-label">Receita de Intermediação</div><div class="kpi-value">${moeda(m.receita_taxas)}</div><div class="kpi-sub">Taxas de custódia</div></div>
-      <div class="kpi-card"><div class="kpi-label">Prestadores Verificados</div><div class="kpi-value">${m.prestadores_verificados} / ${m.total_prestadores}</div><div class="kpi-sub">Com documentação aprovada</div></div>
+      <div class="stat-card"><div class="stat-label">Conversão de ordens</div><div class="stat-figure">${m.taxa_conversao_percentual}%</div><div class="stat-delta">${m.ordens_concluidas} de ${m.total_ordens} concluídas</div></div>
+      <div class="stat-card"><div class="stat-label">Ticket médio</div><div class="stat-figure">${moeda(m.ticket_medio)}</div><div class="stat-delta">Por chamado contratado</div></div>
+      <div class="stat-card"><div class="stat-label">Receita de taxas</div><div class="stat-figure">${moeda(m.receita_taxas)}</div><div class="stat-delta">Intermediação acumulada</div></div>
+      <div class="stat-card"><div class="stat-label">Prestadores verificados</div><div class="stat-figure">${m.prestadores_verificados}/${m.total_prestadores}</div><div class="stat-delta">Documentação homologada</div></div>
     `;
   }
 
   const candidatos = state.usuarios.filter(u => u.papel !== 'ADMIN');
   document.getElementById('admin-verificacoes-list').innerHTML = candidatos.map(u => `
-    <div style="display:flex; justify-content:space-between; align-items:center; padding: 10px 0; border-bottom: 1px solid var(--bg-subtle); gap: 10px;">
+    <div style="display:flex; justify-content:space-between; align-items:center; padding: 10px 0; border-bottom: 1px solid var(--hairline); gap: 12px;">
       <div>
-        <strong style="font-size: 13.5px;">${escapeHtml(u.nome)}</strong>
-        <span class="badge badge-neutral" style="margin-left: 6px;">${escapeHtml(u.papel)}</span>
-        <div style="font-size: 12px; color: var(--text-muted);">
-          ${u.documento_url ? `Doc: ${escapeHtml(u.documento_url)}` : 'Sem anexo enviado'}
+        <div style="font-size: 14px; font-weight: 500;">${escapeHtml(u.nome)} <span style="font-weight: 400; font-size: 12px; color: var(--text-3);">· ${u.papel === 'PRESTADOR' ? 'Prestador' : 'Cliente'}</span></div>
+        <div class="mono" style="font-size: 12px; color: var(--text-3);">
+          ${u.documento_url ? escapeHtml(u.documento_url) : 'Sem documento anexado'}
         </div>
       </div>
       ${u.verificado === 1
-        ? '<span class="badge badge-success">Homologado</span>'
-        : `<button class="btn btn-success btn-sm" onclick="aprovarSeloUsuario(${u.id})">Aprovar Selo</button>`}
+        ? '<span class="status-inline"><span class="dot dot-pos"></span>Homologado</span>'
+        : `<button type="button" class="btn btn-primary btn-sm" onclick="aprovarSeloUsuario(${u.id})">Homologar</button>`}
     </div>
   `).join('');
 
   document.getElementById('admin-cupons-list').innerHTML = state.cupons.map(c => `
-    <div style="display:flex; justify-content:space-between; align-items:center; padding: 10px 0; border-bottom: 1px solid var(--bg-subtle);">
+    <div style="display:flex; justify-content:space-between; align-items:center; padding: 10px 0; border-bottom: 1px solid var(--hairline);">
       <div>
-        <strong style="font-family: monospace; font-size: 13.5px;">${escapeHtml(c.codigo)}</strong>
-        <span style="font-size: 12.5px; color: var(--text-secondary); margin-left: 8px;">${c.desconto_percentual}% de desconto na taxa</span>
+        <span class="mono" style="font-size: 13px; font-weight: 500;">${escapeHtml(c.codigo)}</span>
+        <span style="font-size: 13px; color: var(--text-2); margin-left: 8px;">${c.desconto_percentual}% na taxa</span>
       </div>
-      <button class="btn ${c.ativo === 1 ? 'btn-secondary' : 'btn-primary'} btn-sm" onclick="alternarCupom(${c.id})">
+      <button type="button" class="btn btn-secondary btn-sm" onclick="alternarCupom(${c.id})">
         ${c.ativo === 1 ? 'Desativar' : 'Ativar'}
       </button>
     </div>
@@ -674,34 +861,30 @@ async function renderizarPerfil() {
   document.getElementById('perf-esp-group').classList.toggle('hidden', state.user.papel !== 'PRESTADOR');
 
   const badge = document.getElementById('perf-verificado-badge');
-  if (state.user.verificado === 1) {
-    badge.className = 'badge badge-success';
-    badge.textContent = 'Perfil Verificado';
-  } else {
-    badge.className = 'badge badge-warning';
-    badge.textContent = 'Pendente de Homologação';
-  }
+  badge.innerHTML = state.user.verificado === 1
+    ? '<span class="dot dot-pos"></span>Verificado'
+    : '<span class="dot dot-accent"></span>Em análise';
 
   const resAv = await fetch(`/api/avaliacoes?avaliado_id=${state.user.id}`);
   const jAv = await resAv.json();
   const avBox = document.getElementById('perf-avaliacoes-list');
   if (jAv.sucesso && jAv.dados.length > 0) {
     avBox.innerHTML = jAv.dados.map(a => `
-      <div style="padding: 10px 0; border-bottom: 1px solid var(--bg-subtle);">
-        <div style="display:flex; justify-content:space-between; font-size: 12.5px;">
-          <strong>${escapeHtml(a.avaliador_nome)} (${escapeHtml(a.ordem_titulo)})</strong>
-          <span class="badge badge-warning">Nota ${a.nota}/5</span>
+      <div style="padding: 10px 0; border-bottom: 1px solid var(--hairline);">
+        <div style="display:flex; justify-content:space-between; font-size: 13px;">
+          <span style="font-weight: 500;">${escapeHtml(a.avaliador_nome)}</span>
+          <span class="mono" style="color: var(--text-2);">Nota ${a.nota}/5</span>
         </div>
-        <p style="font-size: 12.5px; color: var(--text-secondary); margin-top: 3px;">${escapeHtml(a.comentario || '')}</p>
+        <p style="font-size: 13px; color: var(--text-2); margin-top: 2px;">${escapeHtml(a.comentario || '')}</p>
       </div>
     `).join('');
   } else {
-    avBox.innerHTML = `<p style="font-size: 12.5px; color: var(--text-muted);">Nenhuma avaliação registrada até o momento.</p>`;
+    avBox.innerHTML = `<div style="font-size: 13px; color: var(--text-3);">Sem avaliações recebidas até o momento</div>`;
   }
 }
 
 // =========================================================================
-// MODAIS INTERATIVOS (DETALHES, CHECKOUT, PROPOSTAS, VISTORIA, DISPUTA)
+// MODAIS
 // =========================================================================
 function abrirModal(html) {
   document.getElementById('modal-body').innerHTML = html;
@@ -722,39 +905,39 @@ async function abrirModalDetalhes(ordemId) {
   const podeContratar = state.user && state.user.id === o.cliente_id && ['PENDENTE', 'PROPOSTA_RECEBIDA'].includes(o.status);
 
   const listaPropHtml = propostas.length === 0
-    ? `<p style="font-size: 13px; color: var(--text-muted); padding: 12px 0;">Nenhuma proposta enviada até o momento.</p>`
+    ? `<div style="font-size: 13px; color: var(--text-3); padding: 8px 0;">Aguardando envio de orçamentos pelos profissionais</div>`
     : propostas.map(p => `
-        <div style="border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px; margin-bottom: 10px;">
+        <div style="border: 1px solid var(--hairline); border-radius: var(--r-control); padding: 12px; margin-bottom: 8px;">
           <div style="display:flex; justify-content:space-between; align-items:center;">
             <div>
-              <strong>${escapeHtml(p.prestador_nome)}</strong>
-              <span style="font-size: 12px; color: var(--text-muted); margin-left: 6px;">Nota ${Number(p.prestador_reputacao || 5).toFixed(1)}</span>
+              <span style="font-weight: 500;">${escapeHtml(p.prestador_nome)}</span>
+              <span class="mono" style="font-size: 12px; color: var(--text-3); margin-left: 6px;">Nota ${Number(p.prestador_reputacao || 5).toFixed(1)}</span>
             </div>
-            <strong style="font-size: 15px;">${moeda(p.valor)}</strong>
+            <span class="mono" style="font-weight: 500;">${moeda(p.valor)}</span>
           </div>
-          <p style="font-size: 12.5px; color: var(--text-secondary); margin: 6px 0;">Prazo: <strong>${escapeHtml(p.prazo_estimado)}</strong> · ${escapeHtml(p.mensagem || '')}</p>
+          <div style="font-size: 13px; color: var(--text-2); margin-top: 4px;">Prazo: ${escapeHtml(p.prazo_estimado)} · ${escapeHtml(p.mensagem || '')}</div>
           ${podeContratar ? `
-            <button class="btn btn-primary btn-sm" style="margin-top: 6px; width: 100%;" onclick="abrirModalCheckout(${o.id}, ${p.id}, ${Number(p.valor)})">
-              Aceitar e Retêr em Escrow (${moeda(p.valor)} + taxa)
+            <button type="button" class="btn btn-primary btn-sm" style="margin-top: 10px; width: 100%;" onclick="abrirModalCheckout(${o.id}, ${p.id}, ${Number(p.valor)})">
+              Contratar com custódia (${moeda(p.valor)} + taxa)
             </button>
           ` : ''}
         </div>
       `).join('');
 
   abrirModal(`
-    <div class="modal-header">
-      <h3>Ordem de Serviço #${o.id}</h3>
-      <button class="btn btn-ghost btn-sm" onclick="fecharModal()">Fechar</button>
+    <div class="modal-top">
+      <h3>${codigoOrdem(o.id)} · ${escapeHtml(o.categoria)}</h3>
+      <button type="button" class="btn btn-secondary btn-sm" onclick="fecharModal()">Fechar</button>
     </div>
-    <p style="font-size: 14.5px; font-weight: 700; margin-bottom: 4px;">${escapeHtml(o.titulo)}</p>
-    <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 12px;">${escapeHtml(o.descricao)}</p>
-    <div style="background: var(--bg-page); padding: 12px; border-radius: var(--radius-sm); font-size: 12.5px; margin-bottom: 16px;">
-      <div><strong>Cliente:</strong> ${escapeHtml(o.cliente_nome)}</div>
-      <div><strong>Local:</strong> ${escapeHtml(o.endereco)} (${escapeHtml(o.cep)})</div>
-      ${o.prestador_nome ? `<div><strong>Profissional contratado:</strong> ${escapeHtml(o.prestador_nome)}</div>` : ''}
-      ${o.foto_conclusao ? `<div><strong> Registro de conclusão:</strong> <a href="${escapeHtml(o.foto_conclusao)}" target="_blank" style="color:var(--accent);">Abrir evidência</a></div>` : ''}
+    <div style="font-size: 15px; font-weight: 500; margin-bottom: 4px;">${escapeHtml(o.titulo)}</div>
+    <p style="font-size: 13px; color: var(--text-2); margin-bottom: 16px;">${escapeHtml(o.descricao)}</p>
+    <div style="background: var(--bg-page); border: 1px solid var(--hairline); padding: 12px; border-radius: var(--r-control); font-size: 13px; margin-bottom: 16px;">
+      <div>Titular: ${escapeHtml(o.cliente_nome)}</div>
+      <div>Endereço: ${escapeHtml(o.endereco)} (<span class="mono">${escapeHtml(o.cep)}</span>)</div>
+      ${o.prestador_nome ? `<div>Prestador: ${escapeHtml(o.prestador_nome)}</div>` : ''}
+      ${o.foto_conclusao ? `<div>Evidência: <a href="${escapeHtml(o.foto_conclusao)}" target="_blank" style="color:var(--accent);">Abrir foto</a></div>` : ''}
     </div>
-    <h4 style="font-size: 13.5px; font-weight: 700; margin-bottom: 8px;">Propostas Recebidas (${propostas.length})</h4>
+    <div style="font-size: 13px; font-weight: 500; margin-bottom: 8px;">Propostas (${propostas.length})</div>
     ${listaPropHtml}
   `);
 }
@@ -762,32 +945,32 @@ async function abrirModalDetalhes(ordemId) {
 function abrirModalCheckout(ordemId, propostaId, valorMaoObra) {
   const taxaBase = Math.max(15, Math.round(valorMaoObra * 0.08 * 100) / 100);
   abrirModal(`
-    <div class="modal-header">
-      <h3>Checkout Protegido FreeLA Escrow</h3>
-      <button class="btn btn-ghost btn-sm" onclick="fecharModal()">Fechar</button>
+    <div class="modal-top">
+      <h3>Retenção em custódia · ${codigoOrdem(ordemId)}</h3>
+      <button type="button" class="btn btn-secondary btn-sm" onclick="fecharModal()">Fechar</button>
     </div>
-    <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 14px;">
-      O valor ficará retido em conta vinculada e só será transferido ao prestador após sua aprovação na vistoria presencial.
+    <p style="font-size: 13px; color: var(--text-2); margin-bottom: 16px;">
+      O valor total permanece guardado na plataforma até você homologar a vistoria presencial.
     </p>
-    <div class="form-group">
-      <label class="form-label">Método de pagamento</label>
-      <select id="chk-metodo" class="form-select">
-        <option value="PIX">PIX Instantâneo (Liquidação imediata em custódia)</option>
-        <option value="CARTAO_CREDITO">Cartão de Crédito (1x sem juros)</option>
+    <div class="field-group">
+      <label class="field-label">Forma de pagamento</label>
+      <select id="chk-metodo" class="field">
+        <option value="PIX">PIX</option>
+        <option value="CARTAO_CREDITO">Cartão de crédito</option>
       </select>
     </div>
-    <div class="form-group">
-      <label class="form-label">Cupom promocional na taxa (opcional)</label>
-      <input type="text" id="chk-cupom" class="form-input" placeholder="Ex: FREELA10 ou BEMVINDO20" oninput="recalcularPreviewCheckout(${valorMaoObra})">
+    <div class="field-group">
+      <label class="field-label">Cupom de desconto na taxa</label>
+      <input type="text" id="chk-cupom" class="field mono" placeholder="Ex: FREELA10" oninput="recalcularPreviewCheckout(${valorMaoObra})">
     </div>
-    <div style="background: var(--bg-page); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px; margin-bottom: 16px; font-size: 13px;">
-      <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>Mão de obra do profissional:</span><strong>${moeda(valorMaoObra)}</strong></div>
-      <div style="display:flex; justify-content:space-between; margin-bottom:6px;"><span>Taxa de custódia e garantia:</span><strong id="chk-taxa-val">${moeda(taxaBase)}</strong></div>
-      <div style="display:flex; justify-content:space-between; padding-top:8px; border-top:1px solid var(--border); font-size:15px;"><strong>Total a reter em Escrow:</strong><strong id="chk-total-val">${moeda(valorMaoObra + taxaBase)}</strong></div>
+    <div style="background: var(--bg-page); border: 1px solid var(--hairline); border-radius: var(--r-control); padding: 12px; margin-bottom: 16px; font-size: 13px;">
+      <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>Mão de obra</span><span class="mono">${moeda(valorMaoObra)}</span></div>
+      <div style="display:flex; justify-content:space-between; margin-bottom:8px;"><span>Taxa de custódia</span><span class="mono" id="chk-taxa-val">${moeda(taxaBase)}</span></div>
+      <div style="display:flex; justify-content:space-between; padding-top:8px; border-top:1px solid var(--hairline); font-weight: 500;"><span>Total retido</span><span class="mono" id="chk-total-val">${moeda(valorMaoObra + taxaBase)}</span></div>
     </div>
     <div style="display:flex; justify-content:flex-end; gap:8px;">
-      <button class="btn btn-secondary" onclick="fecharModal()">Cancelar</button>
-      <button class="btn btn-primary" onclick="confirmarCheckout(${ordemId}, ${propostaId})">Confirmar Pagamento em Custódia</button>
+      <button type="button" class="btn btn-secondary" onclick="fecharModal()">Cancelar</button>
+      <button type="button" class="btn btn-primary" onclick="confirmarCheckout(${ordemId}, ${propostaId})">Confirmar pagamento</button>
     </div>
   `);
 }
@@ -816,37 +999,37 @@ async function confirmarCheckout(ordemId, propostaId) {
   const json = await res.json();
   if (json.sucesso) {
     fecharModal();
-    toast('Pagamento retido em custódia com sucesso!', 'success');
+    toast('Pagamento retido em custódia', 'success');
     await sincronizarDadosBase();
     navegarApp(state.page);
   } else {
-    toast(json.mensagem, 'error');
+    toast(json.mensagem.replace(/!/g, ''), 'error');
   }
 }
 
 function abrirModalProposta(ordemId) {
   abrirModal(`
-    <div class="modal-header">
-      <h3>Enviar Proposta Orçamentária · OS #${ordemId}</h3>
-      <button class="btn btn-ghost btn-sm" onclick="fecharModal()">Fechar</button>
+    <div class="modal-top">
+      <h3>Enviar orçamento · ${codigoOrdem(ordemId)}</h3>
+      <button type="button" class="btn btn-secondary btn-sm" onclick="fecharModal()">Fechar</button>
     </div>
-    <div class="form-row">
-      <div class="form-group">
-        <label class="form-label">Valor da mão de obra (R$)</label>
-        <input type="number" id="prop-valor" class="form-input" placeholder="280.00" min="10" step="1" required>
+    <div class="field-row">
+      <div class="field-group">
+        <label class="field-label">Mão de obra (R$)</label>
+        <input type="number" id="prop-valor" class="field mono" placeholder="280.00" min="10" step="1" required>
       </div>
-      <div class="form-group">
-        <label class="form-label">Prazo estimado</label>
-        <input type="text" id="prop-prazo" class="form-input" placeholder="Ex: Hoje às 15h ou 1 dia útil" required>
+      <div class="field-group">
+        <label class="field-label">Prazo de execução</label>
+        <input type="text" id="prop-prazo" class="field" placeholder="Ex: Hoje às 15h" required>
       </div>
     </div>
-    <div class="form-group">
-      <label class="form-label">Escopo técnico e observações</label>
-      <textarea id="prop-msg" class="form-textarea" rows="3" placeholder="Descreva ferramentas, garantia de mão de obra e condições..."></textarea>
+    <div class="field-group">
+      <label class="field-label">Condições técnicas</label>
+      <textarea id="prop-msg" class="field" rows="3" placeholder="Ferramentas e escopo incluído"></textarea>
     </div>
     <div style="display:flex; justify-content:flex-end; gap:8px;">
-      <button class="btn btn-secondary" onclick="fecharModal()">Cancelar</button>
-      <button class="btn btn-primary" onclick="enviarPropostaOrdem(${ordemId})">Enviar Orçamento</button>
+      <button type="button" class="btn btn-secondary" onclick="fecharModal()">Cancelar</button>
+      <button type="button" class="btn btn-primary" onclick="enviarPropostaOrdem(${ordemId})">Enviar proposta</button>
     </div>
   `);
 }
@@ -864,11 +1047,11 @@ async function enviarPropostaOrdem(ordemId) {
   const json = await res.json();
   if (json.sucesso) {
     fecharModal();
-    toast('Orçamento enviado ao cliente!', 'success');
+    toast('Proposta registrada no chamado', 'success');
     await sincronizarDadosBase();
     navegarApp(state.page);
   } else {
-    toast(json.mensagem, 'error');
+    toast(json.mensagem.replace(/!/g, ''), 'error');
   }
 }
 
@@ -881,64 +1064,64 @@ async function atualizarStatusOrdem(ordemId, novoStatus, fotoConclusao = null) {
   const json = await res.json();
   if (json.sucesso) {
     fecharModal();
-    toast(`Status atualizado para ${novoStatus}.`, 'success');
+    toast('Etapa operacional atualizada', 'success');
     await sincronizarDadosBase();
     navegarApp(state.page);
   } else {
-    toast(json.mensagem, 'error');
+    toast(json.mensagem.replace(/!/g, ''), 'error');
   }
 }
 
 function abrirModalConclusaoPrestador(ordemId) {
   abrirModal(`
-    <div class="modal-header">
-      <h3>Concluir Execução e Solicitar Vistoria</h3>
-      <button class="btn btn-ghost btn-sm" onclick="fecharModal()">Fechar</button>
+    <div class="modal-top">
+      <h3>Solicitar vistoria · ${codigoOrdem(ordemId)}</h3>
+      <button type="button" class="btn btn-secondary btn-sm" onclick="fecharModal()">Fechar</button>
     </div>
-    <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 14px;">
-      Ao enviar para vistoria, o cliente será notificado por WhatsApp e e-mail para inspecionar o serviço e liberar seu repasse.
+    <p style="font-size: 13px; color: var(--text-2); margin-bottom: 16px;">
+      O cliente receberá aviso para inspecionar o serviço e liberar o saldo em custódia.
     </p>
-    <div class="form-group">
-      <label class="form-label">URL da foto de comprovação do reparo (opcional)</label>
-      <input type="text" id="conc-foto" class="form-input" placeholder="https://images.unsplash.com/...">
+    <div class="field-group">
+      <label class="field-label">Foto do reparo concluído (URL opcional)</label>
+      <input type="text" id="conc-foto" class="field" placeholder="https://...">
     </div>
     <div style="display:flex; justify-content:flex-end; gap:8px;">
-      <button class="btn btn-secondary" onclick="fecharModal()">Cancelar</button>
-      <button class="btn btn-success" onclick="atualizarStatusOrdem(${ordemId}, 'AGUARDANDO_VISTORIA', document.getElementById('conc-foto').value.trim())">Confirmar Conclusão</button>
+      <button type="button" class="btn btn-secondary" onclick="fecharModal()">Cancelar</button>
+      <button type="button" class="btn btn-accent" onclick="atualizarStatusOrdem(${ordemId}, 'AGUARDANDO_VISTORIA', document.getElementById('conc-foto').value.trim())">Enviar para vistoria</button>
     </div>
   `);
 }
 
-function selecionarEstrela(n) {
+function selecionarNota(n) {
   state.selectedStarRating = n;
-  document.querySelectorAll('.star-btn').forEach(b => {
-    b.classList.toggle('active', Number(b.dataset.star) <= n);
+  document.querySelectorAll('.rating-key').forEach(b => {
+    b.classList.toggle('selected', Number(b.dataset.val) <= n);
   });
 }
 
 function abrirModalAprovacao(ordemId) {
   state.selectedStarRating = 5;
   abrirModal(`
-    <div class="modal-header">
-      <h3>Homologar Vistoria e Liberar Pagamento</h3>
-      <button class="btn btn-ghost btn-sm" onclick="fecharModal()">Fechar</button>
+    <div class="modal-top">
+      <h3>Aprovar vistoria · ${codigoOrdem(ordemId)}</h3>
+      <button type="button" class="btn btn-secondary btn-sm" onclick="fecharModal()">Fechar</button>
     </div>
-    <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 16px;">
-      Confirme que inspecionou presencialmente o reparo da OS #${ordemId}. Esta ação transfere o saldo em custódia para a carteira do prestador.
+    <p style="font-size: 13px; color: var(--text-2); margin-bottom: 16px;">
+      A confirmação transfere o saldo guardado em custódia para a carteira disponível do prestador.
     </p>
-    <div class="form-group">
-      <label class="form-label">Avaliação do profissional (1 a 5 estrelas)</label>
-      <div class="star-picker">
-        ${[1, 2, 3, 4, 5].map(n => `<button type="button" class="star-btn active" data-star="${n}" onclick="selecionarEstrela(${n})">${n}★</button>`).join('')}
+    <div class="field-group">
+      <label class="field-label">Nota de 1 a 5</label>
+      <div class="rating-row">
+        ${[1, 2, 3, 4, 5].map(n => `<button type="button" class="rating-key selected" data-val="${n}" onclick="selecionarNota(${n})">${n}</button>`).join('')}
       </div>
     </div>
-    <div class="form-group">
-      <label class="form-label">Parecer sobre o serviço realizado</label>
-      <textarea id="aprov-comentario" class="form-textarea" rows="3" placeholder="Descreva sua experiência com pontualidade, limpeza e qualidade técnica..."></textarea>
+    <div class="field-group">
+      <label class="field-label">Comentário sobre a entrega</label>
+      <textarea id="aprov-comentario" class="field" rows="3" placeholder="Pontualidade, acabamento e limpeza do local"></textarea>
     </div>
     <div style="display:flex; justify-content:flex-end; gap:8px;">
-      <button class="btn btn-secondary" onclick="fecharModal()">Cancelar</button>
-      <button class="btn btn-success" onclick="confirmarAprovacaoVistoria(${ordemId})">Aprovar e Liberar Repasse</button>
+      <button type="button" class="btn btn-secondary" onclick="fecharModal()">Cancelar</button>
+      <button type="button" class="btn btn-accent" onclick="confirmarAprovacaoVistoria(${ordemId})">Liberar repasse</button>
     </div>
   `);
 }
@@ -953,34 +1136,34 @@ async function confirmarAprovacaoVistoria(ordemId) {
   const json = await res.json();
   if (json.sucesso) {
     fecharModal();
-    toast(`Vistoria homologada! ${moeda(json.valor_liberado)} liberados ao profissional.`, 'success');
+    toast(`Repasse de ${moeda(json.valor_liberado)} liberado`, 'success');
     await sincronizarDadosBase();
     navegarApp(state.page);
   } else {
-    toast(json.mensagem, 'error');
+    toast(json.mensagem.replace(/!/g, ''), 'error');
   }
 }
 
 function abrirModalAvaliarCliente(ordemId) {
   state.selectedStarRating = 5;
   abrirModal(`
-    <div class="modal-header">
-      <h3>Avaliação Mútua do Cliente · OS #${ordemId}</h3>
-      <button class="btn btn-ghost btn-sm" onclick="fecharModal()">Fechar</button>
+    <div class="modal-top">
+      <h3>Avaliar cliente · ${codigoOrdem(ordemId)}</h3>
+      <button type="button" class="btn btn-secondary btn-sm" onclick="fecharModal()">Fechar</button>
     </div>
-    <div class="form-group">
-      <label class="form-label">Nota para o cliente (1 a 5 estrelas)</label>
-      <div class="star-picker">
-        ${[1, 2, 3, 4, 5].map(n => `<button type="button" class="star-btn active" data-star="${n}" onclick="selecionarEstrela(${n})">${n}★</button>`).join('')}
+    <div class="field-group">
+      <label class="field-label">Nota de 1 a 5</label>
+      <div class="rating-row">
+        ${[1, 2, 3, 4, 5].map(n => `<button type="button" class="rating-key selected" data-val="${n}" onclick="selecionarNota(${n})">${n}</button>`).join('')}
       </div>
     </div>
-    <div class="form-group">
-      <label class="form-label">Comentário sobre o atendimento no local</label>
-      <textarea id="avcli-comentario" class="form-textarea" rows="3" placeholder="Ex: Cliente cordial, local acessível e instruções claras."></textarea>
+    <div class="field-group">
+      <label class="field-label">Observação</label>
+      <textarea id="avcli-comentario" class="field" rows="3" placeholder="Clareza nas informações e recepção no local"></textarea>
     </div>
     <div style="display:flex; justify-content:flex-end; gap:8px;">
-      <button class="btn btn-secondary" onclick="fecharModal()">Cancelar</button>
-      <button class="btn btn-primary" onclick="confirmarAvaliacaoCliente(${ordemId})">Registrar Avaliação</button>
+      <button type="button" class="btn btn-secondary" onclick="fecharModal()">Cancelar</button>
+      <button type="button" class="btn btn-primary" onclick="confirmarAvaliacaoCliente(${ordemId})">Salvar avaliação</button>
     </div>
   `);
 }
@@ -995,33 +1178,30 @@ async function confirmarAvaliacaoCliente(ordemId) {
   const json = await res.json();
   if (json.sucesso) {
     fecharModal();
-    toast('Avaliação do cliente registrada!', 'success');
+    toast('Avaliação registrada', 'success');
     await sincronizarDadosBase();
   } else {
-    toast(json.mensagem, 'error');
+    toast(json.mensagem.replace(/!/g, ''), 'error');
   }
 }
 
 function abrirModalDisputa(ordemId) {
   abrirModal(`
-    <div class="modal-header">
-      <h3>Abrir Contestação e Congelar Escrow · OS #${ordemId}</h3>
-      <button class="btn btn-ghost btn-sm" onclick="fecharModal()">Fechar</button>
+    <div class="modal-top">
+      <h3>Contestar entrega · ${codigoOrdem(ordemId)}</h3>
+      <button type="button" class="btn btn-secondary btn-sm" onclick="fecharModal()">Fechar</button>
     </div>
-    <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 14px;">
-      O valor permanecerá bloqueado na plataforma até a análise técnica da mediação administrativa.
-    </p>
-    <div class="form-group">
-      <label class="form-label">Motivo principal da inconformidade</label>
-      <input type="text" id="disp-motivo" class="form-input" placeholder="Ex: Vazamento persistente após troca da peça" required>
+    <div class="field-group">
+      <label class="field-label">Motivo técnico</label>
+      <input type="text" id="disp-motivo" class="field" placeholder="Descreva a inconformidade encontrada" required>
     </div>
-    <div class="form-group">
-      <label class="form-label">Relato detalhado</label>
-      <textarea id="disp-detalhes" class="form-textarea" rows="3" placeholder="Descreva o problema verificado presencialmente..."></textarea>
+    <div class="field-group">
+      <label class="field-label">Detalhes para a mediação</label>
+      <textarea id="disp-detalhes" class="field" rows="3" placeholder="Relate o estado atual do reparo"></textarea>
     </div>
     <div style="display:flex; justify-content:flex-end; gap:8px;">
-      <button class="btn btn-secondary" onclick="fecharModal()">Cancelar</button>
-      <button class="btn btn-danger" onclick="confirmarDisputa(${ordemId})">Congelar Custódia e Acionar Suporte</button>
+      <button type="button" class="btn btn-secondary" onclick="fecharModal()">Cancelar</button>
+      <button type="button" class="btn btn-danger-quiet" onclick="confirmarDisputa(${ordemId})">Congelar custódia</button>
     </div>
   `);
 }
@@ -1029,7 +1209,7 @@ function abrirModalDisputa(ordemId) {
 async function confirmarDisputa(ordemId) {
   const motivo = document.getElementById('disp-motivo').value.trim();
   const detalhes = document.getElementById('disp-detalhes').value.trim();
-  if (!motivo) return toast('Informe o motivo da contestação.', 'error');
+  if (!motivo) return toast('Informe o motivo da contestação', 'error');
 
   const res = await fetch(`/api/ordens/${ordemId}/disputa`, {
     method: 'POST',
@@ -1039,34 +1219,34 @@ async function confirmarDisputa(ordemId) {
   const json = await res.json();
   if (json.sucesso) {
     fecharModal();
-    toast('Disputa registrada e custódia congelada.', 'info');
+    toast('Custódia congelada para análise', 'info');
     await sincronizarDadosBase();
     navegarApp('disputas');
   } else {
-    toast(json.mensagem, 'error');
+    toast(json.mensagem.replace(/!/g, ''), 'error');
   }
 }
 
 function abrirModalArbitragem(ordemId) {
   abrirModal(`
-    <div class="modal-header">
-      <h3>Arbitragem Administrativa · OS #${ordemId}</h3>
-      <button class="btn btn-ghost btn-sm" onclick="fecharModal()">Fechar</button>
+    <div class="modal-top">
+      <h3>Arbitragem · ${codigoOrdem(ordemId)}</h3>
+      <button type="button" class="btn btn-secondary btn-sm" onclick="fecharModal()">Fechar</button>
     </div>
-    <div class="form-group">
-      <label class="form-label">Decisão da mediação</label>
-      <select id="arb-decisao" class="form-select">
-        <option value="ESTORNO_CLIENTE">Estorno Integral ao Cliente (Cancelar OS)</option>
-        <option value="REPASSE_PRESTADOR">Liberar Repasse ao Prestador (Concluir OS)</option>
+    <div class="field-group">
+      <label class="field-label">Decisão</label>
+      <select id="arb-decisao" class="field">
+        <option value="ESTORNO_CLIENTE">Estorno integral ao cliente</option>
+        <option value="REPASSE_PRESTADOR">Repasse integral ao prestador</option>
       </select>
     </div>
-    <div class="form-group">
-      <label class="form-label">Parecer técnico fundamentado</label>
-      <textarea id="arb-justificativa" class="form-textarea" rows="3" placeholder="Registre a fundamentação da análise para o livro-razão..." required></textarea>
+    <div class="field-group">
+      <label class="field-label">Parecer para o livro-razão</label>
+      <textarea id="arb-justificativa" class="field" rows="3" placeholder="Fundamentação técnica da decisão" required></textarea>
     </div>
     <div style="display:flex; justify-content:flex-end; gap:8px;">
-      <button class="btn btn-secondary" onclick="fecharModal()">Cancelar</button>
-      <button class="btn btn-primary" onclick="confirmarArbitragem(${ordemId})">Executar Decisão</button>
+      <button type="button" class="btn btn-secondary" onclick="fecharModal()">Cancelar</button>
+      <button type="button" class="btn btn-primary" onclick="confirmarArbitragem(${ordemId})">Registrar decisão</button>
     </div>
   `);
 }
@@ -1082,27 +1262,27 @@ async function confirmarArbitragem(ordemId) {
   const json = await res.json();
   if (json.sucesso) {
     fecharModal();
-    toast(json.mensagem, 'success');
+    toast('Decisão gravada no livro-razão', 'success');
     await sincronizarDadosBase();
     navegarApp('disputas');
   } else {
-    toast(json.mensagem, 'error');
+    toast(json.mensagem.replace(/!/g, ''), 'error');
   }
 }
 
 function abrirModalPortfolio() {
   abrirModal(`
-    <div class="modal-header">
-      <h3>Adicionar Serviço ao Meu Portfólio</h3>
-      <button class="btn btn-ghost btn-sm" onclick="fecharModal()">Fechar</button>
+    <div class="modal-top">
+      <h3>Nova obra no portfólio</h3>
+      <button type="button" class="btn btn-secondary btn-sm" onclick="fecharModal()">Fechar</button>
     </div>
-    <div class="form-group">
-      <label class="form-label">Título da obra realizada</label>
-      <input type="text" id="port-titulo" class="form-input" placeholder="Ex: Adequação de quadro bifásico NBR 5410" required>
+    <div class="field-group">
+      <label class="field-label">Título do serviço</label>
+      <input type="text" id="port-titulo" class="field" placeholder="Ex: Adequação de quadro bifásico" required>
     </div>
-    <div class="form-group">
-      <label class="form-label">Especialidade</label>
-      <select id="port-cat" class="form-select">
+    <div class="field-group">
+      <label class="field-label">Área</label>
+      <select id="port-cat" class="field">
         <option value="Elétrica">Elétrica</option>
         <option value="Hidráulica">Hidráulica</option>
         <option value="Pintura">Pintura</option>
@@ -1110,13 +1290,13 @@ function abrirModalPortfolio() {
         <option value="Climatização">Climatização</option>
       </select>
     </div>
-    <div class="form-group">
-      <label class="form-label">Descrição técnica</label>
-      <textarea id="port-desc" class="form-textarea" rows="3" placeholder="Materiais empregados e resultado entregue..."></textarea>
+    <div class="field-group">
+      <label class="field-label">Descrição técnica</label>
+      <textarea id="port-desc" class="field" rows="3" placeholder="Materiais e procedimentos executados"></textarea>
     </div>
     <div style="display:flex; justify-content:flex-end; gap:8px;">
-      <button class="btn btn-secondary" onclick="fecharModal()">Cancelar</button>
-      <button class="btn btn-primary" onclick="salvarItemPortfolio()">Publicar no Catálogo</button>
+      <button type="button" class="btn btn-secondary" onclick="fecharModal()">Cancelar</button>
+      <button type="button" class="btn btn-primary" onclick="salvarItemPortfolio()">Publicar obra</button>
     </div>
   `);
 }
@@ -1125,7 +1305,7 @@ async function salvarItemPortfolio() {
   const titulo = document.getElementById('port-titulo').value.trim();
   const categoria = document.getElementById('port-cat').value;
   const descricao = document.getElementById('port-desc').value.trim();
-  if (!titulo) return toast('Informe o título da obra.', 'error');
+  if (!titulo) return toast('Informe o título da obra', 'error');
 
   const res = await fetch(`/api/prestadores/${state.user.id}/portfolio`, {
     method: 'POST',
@@ -1135,11 +1315,11 @@ async function salvarItemPortfolio() {
   const json = await res.json();
   if (json.sucesso) {
     fecharModal();
-    toast('Obra adicionada ao seu portfólio!', 'success');
+    toast('Obra adicionada ao portfólio', 'success');
     await sincronizarDadosBase();
     renderizarPrestadores();
   } else {
-    toast(json.mensagem, 'error');
+    toast(json.mensagem.replace(/!/g, ''), 'error');
   }
 }
 
@@ -1151,11 +1331,11 @@ async function aprovarSeloUsuario(userId) {
   });
   const json = await res.json();
   if (json.sucesso) {
-    toast(json.mensagem, 'success');
+    toast('Cadastro homologado', 'success');
     await sincronizarDadosBase();
     renderizarPainelAdmin();
   } else {
-    toast(json.mensagem, 'error');
+    toast(json.mensagem.replace(/!/g, ''), 'error');
   }
 }
 
@@ -1172,15 +1352,15 @@ async function alternarCupom(cupomId) {
 }
 
 // =========================================================================
-// LISTENERS DE FORMULÁRIOS FIXOS
+// FORMULÁRIOS FIXOS
 // =========================================================================
 function atualizarEstimativaPreco() {
   const sel = document.getElementById('select-categoria');
   if (!sel) return;
   const cat = sel.value;
-  const info = ESTIMATIVAS_PRECO[cat] || { min: 150, max: 400, desc: '' };
-  document.getElementById('estimator-title').textContent = `Referência Regional · ${cat}`;
-  document.getElementById('estimator-text').textContent = `Faixa média em Volta Redonda: R$ ${info.min},00 a R$ ${info.max},00. ${info.desc}`;
+  const info = ESTIMATIVAS_PRECO[cat] || { min: '150,00', max: '400,00', desc: '' };
+  document.getElementById('estimator-title').textContent = `Referência em Volta Redonda · ${cat}`;
+  document.getElementById('estimator-text').textContent = `Faixa usual: R$ ${info.min} a R$ ${info.max}. ${info.desc}`;
 }
 
 function configurarFormulariosFixos() {
@@ -1189,7 +1369,6 @@ function configurarFormulariosFixos() {
   document.getElementById('filtro-status').addEventListener('change', renderizarMuralOrdens);
   document.getElementById('filtro-categoria').addEventListener('change', renderizarMuralOrdens);
 
-  // Login real
   document.getElementById('form-login').addEventListener('submit', async (e) => {
     e.preventDefault();
     const email = document.getElementById('login-email').value.trim();
@@ -1207,11 +1386,10 @@ function configurarFormulariosFixos() {
       toast(`Sessão iniciada como ${json.dados.nome}`, 'success');
       await iniciarWorkspace('overview');
     } else {
-      toast(json.mensagem || 'E-mail ou senha incorretos.', 'error');
+      toast('E-mail ou senha inválidos', 'error');
     }
   });
 
-  // Cadastro real
   document.getElementById('form-register').addEventListener('submit', async (e) => {
     e.preventDefault();
     const payload = {
@@ -1232,14 +1410,13 @@ function configurarFormulariosFixos() {
       state.token = json.token;
       state.user = json.dados;
       localStorage.setItem(STORAGE_TOKEN_KEY, json.token);
-      toast('Conta criada com sucesso!', 'success');
+      toast('Conta criada', 'success');
       await iniciarWorkspace('overview');
     } else {
-      toast(json.mensagem, 'error');
+      toast(json.mensagem.replace(/!/g, ''), 'error');
     }
   });
 
-  // Nova Ordem
   document.getElementById('form-nova-solicitacao').addEventListener('submit', async (e) => {
     e.preventDefault();
     const payload = {
@@ -1260,15 +1437,14 @@ function configurarFormulariosFixos() {
     if (json.sucesso) {
       e.target.reset();
       atualizarEstimativaPreco();
-      toast('Solicitação publicada no mural!', 'success');
+      toast('Chamado publicado', 'success');
       await sincronizarDadosBase();
       navegarApp('mural');
     } else {
-      toast(json.mensagem, 'error');
+      toast(json.mensagem.replace(/!/g, ''), 'error');
     }
   });
 
-  // Saque PIX
   document.getElementById('form-saque').addEventListener('submit', async (e) => {
     e.preventDefault();
     const valor = parseFloat(document.getElementById('saque-valor').value);
@@ -1281,15 +1457,14 @@ function configurarFormulariosFixos() {
     const json = await res.json();
     if (json.sucesso) {
       e.target.reset();
-      toast(json.mensagem, 'success');
+      toast('Transferência PIX enviada', 'success');
       await sincronizarDadosBase();
       renderizarCarteira();
     } else {
-      toast(json.mensagem, 'error');
+      toast(json.mensagem.replace(/!/g, ''), 'error');
     }
   });
 
-  // Novo Cupom Admin
   document.getElementById('form-novo-cupom').addEventListener('submit', async (e) => {
     e.preventDefault();
     const codigo = document.getElementById('cupom-codigo').value.trim();
@@ -1302,15 +1477,14 @@ function configurarFormulariosFixos() {
     const json = await res.json();
     if (json.sucesso) {
       e.target.reset();
-      toast(json.mensagem, 'success');
+      toast('Cupom adicionado', 'success');
       await sincronizarDadosBase();
       renderizarPainelAdmin();
     } else {
-      toast(json.mensagem, 'error');
+      toast(json.mensagem.replace(/!/g, ''), 'error');
     }
   });
 
-  // Atualizar Perfil
   document.getElementById('form-perfil').addEventListener('submit', async (e) => {
     e.preventDefault();
     const res = await fetch('/api/auth/perfil', {
@@ -1327,13 +1501,12 @@ function configurarFormulariosFixos() {
     if (json.sucesso) {
       state.user = json.dados;
       atualizarResumoUsuarioSidebar();
-      toast('Dados da conta atualizados!', 'success');
+      toast('Dados salvos', 'success');
     } else {
-      toast(json.mensagem, 'error');
+      toast(json.mensagem.replace(/!/g, ''), 'error');
     }
   });
 
-  // Enviar Documento para Verificação
   document.getElementById('form-documento').addEventListener('submit', async (e) => {
     e.preventDefault();
     const documento_url = document.getElementById('perf-doc-url').value.trim();
@@ -1344,11 +1517,11 @@ function configurarFormulariosFixos() {
     });
     const json = await res.json();
     if (json.sucesso) {
-      toast(json.mensagem, 'success');
+      toast('Documento enviado para análise', 'success');
       await sincronizarDadosBase();
       renderizarPerfil();
     } else {
-      toast(json.mensagem, 'error');
+      toast(json.mensagem.replace(/!/g, ''), 'error');
     }
   });
 }
