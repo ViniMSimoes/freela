@@ -526,3 +526,29 @@ exports.listarNotificacoes = (req, res) => {
     res.status(500).json({ sucesso: false, mensagem: 'Erro ao listar histórico de notificações.' });
   }
 };
+
+// 15. Avaliação Mútua Bilateral (Prestador avalia Cliente)
+exports.avaliarCliente = (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    const { prestador_id, nota, comentario } = req.body;
+    const resultado = escrowService.avaliarCliente({
+      ordemId: id,
+      prestadorId: prestador_id,
+      nota,
+      comentario
+    });
+
+    res.status(201).json({
+      sucesso: true,
+      mensagem: 'Avaliação do cliente registrada com sucesso!',
+      dados: resultado
+    });
+  } catch (error) {
+    console.error('[ERRO avaliarCliente]:', error);
+    res.status(error.status || 500).json({
+      sucesso: false,
+      mensagem: error.message || 'Erro ao registrar avaliação do cliente.'
+    });
+  }
+};

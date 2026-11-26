@@ -226,8 +226,112 @@ async function runTests() {
     assert.strictEqual(fkBloqueada, true);
     console.log('  ✓ Inserção com chave estrangeira inexistente rejeitada pelo SQLite (Integridade ativa).');
 
+    // Teste 17: Cadastro e Autenticação (Inicia com verificado = 0)
+    console.log('• Teste 17: POST /api/auth/register & /login (Cadastro com verificado=0 e Token)');
+    const uniqueSuffix = Date.now();
+    const emailNovo = `joao.${uniqueSuffix}@email.com`;
+    const resReg = await fetch(`${baseUrl}/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        nome: 'João Pintor',
+        email: emailNovo,
+        senha: 'senhaSegura123',
+        papel: 'PRESTADOR',
+        especialidade: 'Pintura'
+      })
+    });
+    assert.strictEqual(resReg.status, 201);
+    const dataReg = await resReg.json();
+    assert.strictEqual(dataReg.dados.verificado, 0);
+    assert.ok(dataReg.token);
+    const novoUserId = dataReg.dados.id;
+
+    const resLogin = await fetch(`${baseUrl}/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: emailNovo, senha: 'senhaSegura123' })
+    });
+    assert.strictEqual(resLogin.status, 200);
+    console.log('  ✓ Usuário cadastrado com verificado=0 e autenticado com sucesso.');
+
+    // Teste 18: Envio de Documento e Aprovação pelo ADMIN
+    console.log('• Teste 18: PATCH /api/admin/usuarios/:id/aprovar (Selo Verificado via ADMIN)');
+    const resDoc = await fetch(`${baseUrl}/usuarios/${novoUserId}/verificar-documento`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ documento_url: 'https://docs.freela.com/cnh_joao.pdf' })
+    });
+    assert.strictEqual(resDoc.status, 200);
+
+    const resAprovaNaoAdmin = await fetch(`${baseUrl}/admin/usuarios/${novoUserId}/aprovar`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ admin_id: 1 })
+    });
+    assert.strictEqual(resAprovaNaoAdmin.status, 403);
+
+    const adminUser = dataUsers.dados.find(u => u.papel === 'ADMIN') || { id: 4 };
+    const resAprovaAdmin = await fetch(`${baseUrl}/admin/usuarios/${novoUserId}/aprovar`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ admin_id: adminUser.id })
+    });
+    assert.strictEqual(resAprovaAdmin.status, 200);
+    console.log('  ✓ Controle RBAC validado (HTTP 403 para não-ADMIN) e selo aprovado pelo ADMIN.');
+
+    // Teste 19: Gestão Dinâmica de Cupons Promocionais
+    console.log('• Teste 19: POST /api/admin/cupons & GET /api/cupons (Cupons Dinâmicos)');
+    const codCupom = `PROMO${String(uniqueSuffix).slice(-4)}`;
+    const resCupom = await fetch(`${baseUrl}/admin/cupons`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ admin_id: adminUser.id, codigo: codCupom, desconto_percentual: 25 })
+    });
+    assert.strictEqual(resCupom.status, 201);
+    const resListaCupons = await fetch(`${baseUrl}/cupons`);
+    const dataCupons = await resListaCupons.json();
+    assert.ok(dataCupons.dados.some(c => c.codigo === codCupom));
+    console.log(`  ✓ Cupom dinâmico ${codCupom} criado e listado com sucesso.`);
+
+    // Teste 20: Catálogo de Prestadores e Portfólio
+    console.log('• Teste 20: GET /api/prestadores & POST /api/prestadores/:id/portfolio');
+    const resPort = await fetch(`${baseUrl}/prestadores/${novoUserId}/portfolio`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        titulo: 'Pintura Acrílica Externa',
+        categoria: 'Pintura',
+        descricao: 'Execução completa em fachada residencial.'
+      })
+    });
+    assert.strictEqual(resPort.status, 201);
+    const resPrest = await fetch(`${baseUrl}/prestadores`);
+    const dataPrest = await resPrest.json();
+    assert.ok(dataPrest.dados.some(p => p.id === novoUserId && p.portfolio.length > 0));
+    console.log('  ✓ Portfólio técnico adicionado e listado no catálogo de prestadores.');
+
+    // Teste 21: Avaliação Mútua Bilateral (Prestador -> Cliente)
+    console.log('• Teste 21: POST /api/ordens/:id/avaliar-cliente (Avaliação Mútua Bilateral)');
+    const resAvCliente = await fetch(`${baseUrl}/ordens/${novaOrdemId}/avaliar-cliente`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prestador_id: 2, nota: 5, comentario: 'Cliente recebeu no horário combinado.' })
+    });
+    assert.strictEqual(resAvCliente.status, 201);
+    console.log('  ✓ Avaliação mútua bilateral (Prestador -> Cliente) registrada com sucesso.');
+
+    // Teste 22: Métricas Gerenciais do Painel Admin
+    console.log('• Teste 22: GET /api/admin/metricas (Métricas de Conversão e Receita)');
+    const resMetAdmin = await fetch(`${baseUrl}/admin/metricas`);
+    assert.strictEqual(resMetAdmin.status, 200);
+    const dataMetAdmin = await resMetAdmin.json();
+    assert.strictEqual(dataMetAdmin.sucesso, true);
+    assert.ok(typeof dataMetAdmin.dados.taxa_conversao_percentual === 'number');
+    console.log(`  ✓ Métricas gerenciais retornadas (Conversão: ${dataMetAdmin.dados.taxa_conversao_percentual}%).`);
+
     console.log('\n======================================================');
-    console.log(' TODOS OS 16 TESTES PASSARAM COM 100% DE SUCESSO!     ');
+    console.log(' TODOS OS 22 TESTES PASSARAM COM 100% DE SUCESSO!     ');
     console.log('======================================================\n');
   } catch (err) {
     console.error('\n❌ FALHA NOS TESTES:', err);

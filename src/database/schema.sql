@@ -12,6 +12,8 @@ CREATE TABLE IF NOT EXISTS usuarios (
     saldo_disponivel REAL DEFAULT 0.0,
     saldo_custodia REAL DEFAULT 0.0,
     verificado INTEGER DEFAULT 0,
+    senha_hash TEXT,
+    documento_url TEXT,
     criado_em DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -97,4 +99,25 @@ CREATE TABLE IF NOT EXISTS notificacoes_log (
     status TEXT DEFAULT 'ENVIADO',
     criado_em DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
+);
+
+-- Tabela de Cupons Promocionais Dinâmicos (Item 12)
+CREATE TABLE IF NOT EXISTS cupons (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    codigo TEXT UNIQUE NOT NULL,
+    desconto_percentual INTEGER CHECK(desconto_percentual BETWEEN 1 AND 100) NOT NULL,
+    ativo INTEGER DEFAULT 1,
+    criado_em DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Tabela de Catálogo e Portfólio de Serviços do Prestador (Item 10B)
+CREATE TABLE IF NOT EXISTS portfolio_itens (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    prestador_id INTEGER NOT NULL,
+    titulo TEXT NOT NULL,
+    categoria TEXT NOT NULL,
+    descricao TEXT,
+    foto_url TEXT,
+    criado_em DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (prestador_id) REFERENCES usuarios(id)
 );

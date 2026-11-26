@@ -28,8 +28,11 @@
             <span class="role-pill" id="user-role-badge">CLIENTE</span>
           </div>
         </div>
-        <button class="btn btn-secondary btn-sm" id="btn-switch-role" title="Alternar visão entre Cliente e Prestador">
+        <button class="btn btn-secondary btn-sm" id="btn-switch-role" title="Alternar visão entre Cliente, Prestador e Admin">
           🔄 Alternar Papel
+        </button>
+        <button class="btn btn-primary btn-sm" onclick="abrirModalAuth()" title="Entrar ou cadastrar nova conta">
+          🔑 Conta
         </button>
       </div>
     </div>
@@ -108,6 +111,12 @@
         </button>
         <button class="tab-btn" id="tab-btn-notificacoes" onclick="trocarAba('notificacoes')">
           <span>📱</span> Notificações (Zap/Email) <span class="tab-badge" id="badge-total-notificacoes" style="background:#DCFCE7; color:#166534;">0</span>
+        </button>
+        <button class="tab-btn" id="tab-btn-prestadores" onclick="trocarAba('prestadores')">
+          <span>🛠️</span> Prestadores & Portfólio
+        </button>
+        <button class="tab-btn" id="tab-btn-admin" onclick="trocarAba('admin')">
+          <span>⚙️</span> Painel Admin
         </button>
       </div>
     </div>
@@ -317,6 +326,54 @@
             <!-- Renderizado dinamicamente -->
           </tbody>
         </table>
+      </div>
+    </div>
+
+    <!-- ABA 7: Catálogo de Prestadores & Portfólio (Item 10B) -->
+    <div id="tab-prestadores" class="tab-content" style="display: none;">
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 20px;">
+        <div>
+          <h2 class="section-title">Catálogo de Prestadores & Portfólio Técnico</h2>
+          <p class="section-desc">Profissionais cadastrados na região com selo de verificação documental, reputação e histórico de obras.</p>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="abrirModalPortfolio()">+ Adicionar ao Portfólio</button>
+      </div>
+
+      <div id="prestadores-container" class="orders-grid">
+        <!-- Renderizado dinamicamente -->
+      </div>
+    </div>
+
+    <!-- ABA 8: Painel Administrativo, Verificações, Cupons & Métricas (Itens 11, 12 e 13) -->
+    <div id="tab-admin" class="tab-content" style="display: none;">
+      <div style="margin-bottom: 20px;">
+        <h2 class="section-title">Painel Gerencial e Moderação (ADMIN)</h2>
+        <p class="section-desc">Métricas de conversão, homologação de selo verificado e gestão dinâmica de cupons promocionais.</p>
+      </div>
+
+      <div class="kpi-grid" id="admin-metrics-grid" style="margin-bottom: 24px;">
+        <!-- Renderizado dinamicamente -->
+      </div>
+
+      <div class="wallet-grid" style="margin-bottom: 24px;">
+        <div class="card-wrapper" style="margin: 0; max-width: 100%;">
+          <h3 style="font-size: 16px; font-weight: 700; margin-bottom: 12px;">Homologação de Documentos (Selo Verificado)</h3>
+          <div id="admin-verificacoes-list">
+            <!-- Renderizado dinamicamente -->
+          </div>
+        </div>
+
+        <div class="card-wrapper" style="margin: 0; max-width: 100%;">
+          <h3 style="font-size: 16px; font-weight: 700; margin-bottom: 12px;">Cupons Promocionais Dinâmicos</h3>
+          <form id="form-novo-cupom" style="display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap;">
+            <input type="text" id="cupom-codigo" class="form-input" placeholder="Código (ex: VERAO30)" style="flex: 1; min-width: 120px;" required maxlength="20">
+            <input type="number" id="cupom-desconto" class="form-input" placeholder="% Desc." min="1" max="100" style="width: 100px;" required>
+            <button type="submit" class="btn btn-primary btn-sm">Criar Cupom</button>
+          </form>
+          <div id="admin-cupons-list">
+            <!-- Renderizado dinamicamente -->
+          </div>
+        </div>
       </div>
     </div>
 

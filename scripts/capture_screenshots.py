@@ -16,7 +16,9 @@ tabs = [
     ("print_mural.png", f"http://localhost:{PORT}#mural"),
     ("print_escrow.png", f"http://localhost:{PORT}#escrow"),
     ("print_carteira.png", f"http://localhost:{PORT}#carteira"),
-    ("print_notificacoes.png", f"http://localhost:{PORT}#notificacoes")
+    ("print_notificacoes.png", f"http://localhost:{PORT}#notificacoes"),
+    ("print_prestadores.png", f"http://localhost:{PORT}#prestadores"),
+    ("print_admin.png", f"http://localhost:{PORT}#admin")
 ]
 
 try:

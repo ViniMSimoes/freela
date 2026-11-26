@@ -402,11 +402,11 @@ def gerar_docx_backlog():
     headers = ["Indicador", "Versão 1.0 (16/10)", "Versão 2.0 (26/11)", "Situação Atual"]
     col_w = [2.0, 1.3, 1.3, 1.7]
     data = [
-        ["Total de itens no backlog", "13 itens", "19 itens", "Acréscimo de 6 itens"],
-        ["Itens concluídos no MVP", "0 itens", "15 itens", "78,9% do total entregue"],
+        ["Total de itens no backlog", "13 itens", "19 itens", "Escopo completo (Sprint 1 e 2)"],
+        ["Itens concluídos", "0 itens", "19 itens", "100% do total entregue"],
         ["Itens Must", "7 itens", "9 itens", "9 de 9 concluídos (100%)"],
-        ["Itens Should", "4 itens", "7 itens", "6 de 7 concluídos (85,7%)"],
-        ["Itens Could", "2 itens", "3 itens", "0 de 3 concluídos (Sprint 2)"],
+        ["Itens Should", "4 itens", "7 itens", "7 de 7 concluídos (100%)"],
+        ["Itens Could", "2 itens", "3 itens", "3 de 3 concluídos (100%)"],
         ["Habilitadores técnicos", "1 item", "4 itens", "4 de 4 concluídos"],
         ["Requisitos não funcionais", "1 item", "2 itens", "2 de 2 atendidos"]
     ]
@@ -443,10 +443,10 @@ def gerar_docx_backlog():
         ["8", "História", "Abertura de disputa congelando o saldo em custódia", "Should", "CONCLUÍDO (MVP)"],
         ["9", "História", "Avaliação mútua por estrelas (1 a 5) com recálculo de média", "Should", "CONCLUÍDO (MVP)"],
         ["10A", "História", "Solicitação de saque PIX do saldo disponível do prestador", "Should", "CONCLUÍDO (MVP)"],
-        ["10B", "História", "Catálogo de especialidades e portfólio de serviços", "Could", "Sprint 2 (Dezembro)"],
-        ["11", "História", "Cadastro com envio de documento para selo verificado", "Should", "Sprint 2 (Dezembro)"],
-        ["12", "História", "Painel administrativo para cadastro de cupons dinâmicos", "Could", "Sprint 2 (Dezembro)"],
-        ["13", "História", "Painel gerencial de conversão para administradores", "Could", "Sprint 2 (Dezembro)"],
+        ["10B", "História", "Catálogo de especialidades e portfólio de serviços", "Could", "CONCLUÍDO (Sprint 2)"],
+        ["11", "História", "Cadastro com envio de documento para selo verificado", "Should", "CONCLUÍDO (Sprint 2)"],
+        ["12", "História", "Painel administrativo para cadastro de cupons dinâmicos", "Could", "CONCLUÍDO (Sprint 2)"],
+        ["13", "História", "Painel gerencial de conversão para administradores", "Could", "CONCLUÍDO (Sprint 2)"],
         ["14", "Habilitador", "Cabeçalhos HTTP de segurança com Helmet e política CSP", "Must", "CONCLUÍDO (MVP)"],
         ["15", "Habilitador", "Transações ACID contra pagamento duplo (double-spending)", "Must", "CONCLUÍDO (MVP)"],
         ["16", "RNF", "Rate Limiting (200 req/15min) e payload máximo de 100 KB", "Should", "CONCLUÍDO (MVP)"],

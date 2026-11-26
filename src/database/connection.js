@@ -19,6 +19,15 @@ const schemaPath = path.resolve(__dirname, 'schema.sql');
 const schemaSql = fs.readFileSync(schemaPath, 'utf8');
 db.exec(schemaSql);
 
+// Migração segura de colunas adicionadas na Sprint 2 (compatível com bancos já existentes)
+const userCols = db.prepare('PRAGMA table_info(usuarios)').all().map(c => c.name);
+if (!userCols.includes('senha_hash')) {
+  db.exec('ALTER TABLE usuarios ADD COLUMN senha_hash TEXT;');
+}
+if (!userCols.includes('documento_url')) {
+  db.exec('ALTER TABLE usuarios ADD COLUMN documento_url TEXT;');
+}
+
 // Inserir dados iniciais caso o banco esteja novo
 const countUsers = db.prepare('SELECT COUNT(*) as total FROM usuarios').get().total;
 
@@ -84,6 +93,22 @@ if (countUsers === 0) {
     INSERT INTO propostas (ordem_id, prestador_id, valor, prazo_estimado, mensagem, status)
     VALUES (2, 3, 140.0, 'Hoje até 17h', 'Tenho o sifão novo e ferramentas adequadas para troca imediata.', 'PENDENTE')
   `).run();
+}
+
+// Seed de Cupons Dinâmicos (Item 12)
+const countCupons = db.prepare('SELECT COUNT(*) as total FROM cupons').get().total;
+if (countCupons === 0) {
+  const insertCupom = db.prepare('INSERT INTO cupons (codigo, desconto_percentual, ativo) VALUES (?, ?, ?)');
+  insertCupom.run('FREELA10', 50, 1);
+  insertCupom.run('BEMVINDO20', 20, 1);
+}
+
+// Seed de Portfólio de Prestadores (Item 10B)
+const countPortfolio = db.prepare('SELECT COUNT(*) as total FROM portfolio_itens').get().total;
+if (countPortfolio === 0) {
+  const insertPort = db.prepare('INSERT INTO portfolio_itens (prestador_id, titulo, categoria, descricao, foto_url) VALUES (?, ?, ?, ?, ?)');
+  insertPort.run(2, 'Reforma de Quadro Trifásico Residencial', 'Elétrica', 'Substituição completa de barramento, disjuntores DIN e aterramento NBR 5410.', 'https://images.unsplash.com/photo-1621905251189-08b45d6a269e');
+  insertPort.run(3, 'Instalação Hidráulica Completa Cozinha', 'Hidráulica', 'Tubulação PEX, registros de gaveta e válvulas anti-refluxo com teste de pressão.', 'https://images.unsplash.com/photo-1585704032915-c3400ca199e7');
 }
 
 module.exports = db;

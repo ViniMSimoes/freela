@@ -45,13 +45,13 @@ A Tabela 1 sintetiza a evolução quantitativa dos itens do backlog entre as ver
 
 Tabela 1: Indicadores comparativos do Product Backlog.
 
-| Indicador de Engenharia | Versão 1.0 (16/10) | Versão 2.0 (27/11) | Situação Atual |
+| Indicador de Engenharia | Versão 1.0 (16/10) | Versão Final (26/11) | Situação Atual |
 |---|---|---|---|
-| Total de Itens Catalogados | 13 itens | 19 itens | Escopo ampliado em 6 itens (incluindo divisão de 10A/10B) |
-| Itens Concluídos e Testados no MVP | 0 itens | 15 itens | 78,9% do escopo total entregue |
+| Total de Itens Catalogados | 13 itens | 19 itens | Escopo completo (Sprint 1 + Sprint 2) |
+| Itens Concluídos e Testados | 0 itens | 19 itens | 100% do escopo total entregue |
 | Itens Classificados como Must | 7 itens | 9 itens | 100% dos itens Must concluídos (9 de 9) |
-| Itens Classificados como Should | 4 itens | 7 itens | 85,7% concluídos (6 de 7) |
-| Itens Classificados como Could | 2 itens | 3 itens | 0% concluídos (previstos para Sprint 2) |
+| Itens Classificados como Should | 4 itens | 7 itens | 100% dos itens Should concluídos (7 de 7) |
+| Itens Classificados como Could | 2 itens | 3 itens | 100% dos itens Could concluídos (3 de 3) |
 | Habilitadores Técnicos de Arquitetura | 1 item | 4 itens | 100% concluídos (Escrow, Helmet, ACID, Mensageria) |
 | Requisitos Não Funcionais (RNF) | 1 item | 2 itens | 100% atendidos (Latência < 50ms, Rate Limit) |
 
@@ -134,10 +134,10 @@ Tabela 2: Product Backlog consolidado e priorizado.
 | **8** | História | **Abertura de Disputa:** Cliente contesta serviço mal executado, congelando o saldo em custódia. | **Dado** defeito não corrigido, **quando** clica em disputa, **então** status avança para EM_DISPUTA e saldo congela. | Should | Alto / Médio | **CONCLUÍDO (MVP)** |
 | **9** | História | **Avaliação Mútua por Estrelas:** Cliente e prestador atribuem notas de 1 a 5 e pareceres qualitativos. | **Dado** vistoria concluída, **quando** submete avaliação, **então** reputação média do perfil é recalculada. | Should | Médio / Baixo | **CONCLUÍDO (MVP)** |
 | **10A**| História | **Resgate de Saldo via PIX:** Prestador solicita transferência instantânea do saldo liberado para sua chave PIX. | **Dado** saldo disponível, **quando** solicita saque, **então** sistema debita a carteira e emite comprovante. | Should | Alto / Médio | **CONCLUÍDO (MVP)** |
-| **10B**| História | **Catálogo de Especialidades:** Prestador gerencia portfólio fotográfico de obras anteriores e certificados. | **Dado** painel do profissional, **quando** anexa fotos, **então** catálogo público é exibido no mural. | Could | Médio / Médio | **Sprint 2 (Dezembro)** |
-| **11** | História | **Verificação Documental:** Envio de documento oficial com foto e comprovante residencial para selo verificado. | **Dado** envio de documento, **quando** validado pelo suporte, **então** conta recebe a chancela de perfil verificado. | Should | Médio / Médio | **Sprint 2 (Dezembro)** |
-| **12** | História | **Gestão de Cupons Promocionais:** Administrador cadastra regras dinâmicas de abatimento na taxa de serviço. | **Dado** código cadastrado, **quando** cliente aplica no checkout, **então** desconto percentual é deduzido. | Could | Baixo / Baixo | **Sprint 2 (Dezembro)** |
-| **13** | História | **Painel com Métricas de Conversão:** Gráficos de volume financeiro transacionado e tempo médio de conclusão. | **Dado** acesso de administrador, **quando** consulta painel, **então** relatórios gerenciais são emitidos. | Could | Médio / Médio | **Sprint 2 (Dezembro)** |
+| **10B**| História | **Catálogo de Especialidades:** Prestador gerencia portfólio fotográfico de obras anteriores e certificados. | **Dado** painel do profissional, **quando** anexa fotos, **então** catálogo público é exibido no mural. | Could | Médio / Médio | **CONCLUÍDO (Sprint 2)** |
+| **11** | História | **Verificação Documental:** Envio de documento oficial com foto e comprovante residencial para selo verificado. | **Dado** envio de documento, **quando** validado pelo suporte, **então** conta recebe a chancela de perfil verificado. | Should | Médio / Médio | **CONCLUÍDO (Sprint 2)** |
+| **12** | História | **Gestão de Cupons Promocionais:** Administrador cadastra regras dinâmicas de abatimento na taxa de serviço. | **Dado** código cadastrado, **quando** cliente aplica no checkout, **então** desconto percentual é deduzido. | Could | Baixo / Baixo | **CONCLUÍDO (Sprint 2)** |
+| **13** | História | **Painel com Métricas de Conversão:** Gráficos de volume financeiro transacionado e tempo médio de conclusão. | **Dado** acesso de administrador, **quando** consulta painel, **então** relatórios gerenciais são emitidos. | Could | Médio / Médio | **CONCLUÍDO (Sprint 2)** |
 | **14** | Enabler | **Hardening HTTP com Helmet:** Cabeçalhos contra Clickjacking (`SAMEORIGIN`), MIME-sniffing e política CSP. | **Dado** resposta do servidor, **quando** inspecionada, **então** contém cabeçalhos OWASP e omite X-Powered-By. | Must | Alto / Médio | **CONCLUÍDO (MVP)** |
 | **15** | Enabler | **Atomicidade ACID Anti Double-Spending:** Transações com blocos `BEGIN/COMMIT` impedindo pagamentos duplicados. | **Dado** tentativas de checkout duplo, **quando** submetidas, **então** apenas uma executa e a outra falha. | Must | Alto / Médio | **CONCLUÍDO (MVP)** |
 | **16** | RNF | **Rate Limiting e Limitação de Payloads:** Proteção contra sobrecarga e exaustão de recursos de memória. | **Dado** mais de 200 req em 15 min por IP, **quando** detectadas, **então** servidor bloqueia com HTTP 429. | Should | Médio / Baixo | **CONCLUÍDO (MVP)** |

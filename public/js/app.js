@@ -50,7 +50,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   if (window.location.hash) {
     const abaHash = window.location.hash.replace('#', '');
-    if (['mural', 'nova', 'escrow', 'carteira', 'disputas', 'notificacoes'].includes(abaHash)) {
+    if (['mural', 'nova', 'escrow', 'carteira', 'disputas', 'notificacoes', 'prestadores', 'admin'].includes(abaHash)) {
       trocarAba(abaHash);
     }
   }
@@ -195,6 +195,8 @@ function renderizarOrdens() {
           actionButtons = `<button class="btn btn-success btn-sm" onclick="atualizarStatusOrdem(${orderId}, 'AGUARDANDO_VISTORIA')">Concluir Reparo</button>`;
         } else if (o.status === 'AGUARDANDO_VISTORIA') {
           actionButtons = `<span style="font-size: 12px; color: #B45309; font-weight: 600;">⏳ Aguardando Vistoria</span>`;
+        } else if (o.status === 'CONCLUIDO') {
+          actionButtons = `<button class="btn btn-secondary btn-sm" onclick="abrirModalAvaliarCliente(${orderId})">⭐ Avaliar Cliente</button>`;
         }
       }
     }
@@ -398,6 +400,8 @@ function trocarAba(aba) {
   if (aba === 'carteira') { carregarUsuarios(); atualizarCarteiraPrestador(); }
   if (aba === 'disputas') carregarOrdens();
   if (aba === 'notificacoes') carregarNotificacoes();
+  if (aba === 'prestadores') carregarPrestadores();
+  if (aba === 'admin') carregarPainelAdmin();
 }
 
 // Carregar Histórico de Mensageria (WhatsApp & E-mail)
@@ -463,18 +467,27 @@ function setupEventListeners() {
   document.getElementById('filtro-categoria').addEventListener('change', carregarOrdens);
   document.getElementById('filtro-busca').addEventListener('input', renderizarOrdens);
 
-  // Alternar papel Cliente / Prestador
+  // Alternar papel Cliente / Prestador / Admin
   document.getElementById('btn-switch-role').addEventListener('click', () => {
     if (state.currentRole === 'CLIENTE') {
       state.currentRole = 'PRESTADOR';
       state.currentUser = state.usuarios.find(u => u.papel === 'PRESTADOR') || { id: 2, nome: 'Carlos Silva', papel: 'PRESTADOR' };
+    } else if (state.currentRole === 'PRESTADOR') {
+      state.currentRole = 'ADMIN';
+      state.currentUser = state.usuarios.find(u => u.papel === 'ADMIN') || { id: 4, nome: 'Administrador FreeLA', papel: 'ADMIN' };
     } else {
       state.currentRole = 'CLIENTE';
       state.currentUser = state.usuarios.find(u => u.papel === 'CLIENTE') || { id: 1, nome: 'Maria Santos', papel: 'CLIENTE' };
     }
     atualizarBadgeUsuario();
     renderizarOrdens();
+    if (state.activeTab === 'admin') carregarPainelAdmin();
   });
+
+  const formCupom = document.getElementById('form-novo-cupom');
+  if (formCupom) {
+    formCupom.addEventListener('submit', criarCupomAdmin);
+  }
 
   // Formulário de Nova Solicitação
   document.getElementById('form-nova-solicitacao').addEventListener('submit', async (e) => {
@@ -854,4 +867,288 @@ function abrirModalDisputa(ordemId) {
 
 function fecharModal() {
   document.getElementById('modal').style.display = 'none';
+}
+
+// =======================================================
+// SPRINT 2: PRESTADORES, PORTFÓLIO, ADMIN, CUPONS & AUTH
+// =======================================================
+
+async function carregarPrestadores() {
+  const container = document.getElementById('prestadores-container');
+  if (!container) return;
+  try {
+    const res = await fetch('/api/prestadores');
+    const json = await res.json();
+    if (!json.sucesso) return;
+    container.innerHTML = '';
+
+    json.dados.forEach(p => {
+      const card = document.createElement('div');
+      card.className = 'order-card';
+      const selo = p.verificado === 1
+        ? `<span class="badge badge-concluido">✓ Perfil Verificado</span>`
+        : `<span class="badge" style="background:#FEF3C7; color:#92400E;">⏳ Pendente Verificação</span>`;
+
+      const portHtml = (p.portfolio || []).length > 0
+        ? p.portfolio.map(item => `
+            <div style="margin-top:8px; padding:8px; background:#F8FAFC; border:1px solid #E2E8F0; border-radius:6px;">
+              <strong style="font-size:13px;">${escapeHtml(item.titulo)}</strong>
+              <span style="font-size:11px; color:#64748B;"> (${escapeHtml(item.categoria)})</span>
+              <p style="font-size:12px; color:#475569; margin-top:2px;">${escapeHtml(item.descricao || '')}</p>
+            </div>
+          `).join('')
+        : `<p style="font-size:12px; color:#94A3B8; margin-top:8px;">Sem itens no portfólio ainda.</p>`;
+
+      card.innerHTML = `
+        <div class="order-card-header">
+          <span class="order-category">🛠️ ${escapeHtml(p.especialidade || 'Serviços Gerais')}</span>
+          ${selo}
+        </div>
+        <h3 class="order-title">${escapeHtml(p.nome)}</h3>
+        <p style="font-size:13px; color:#475569;">⭐ Reputação: <strong>${Number(p.reputacao).toFixed(1)}</strong> · 📞 ${escapeHtml(p.telefone || '')}</p>
+        <div style="margin-top:10px;">
+          <strong style="font-size:12px; color:#0F172A;">Portfólio de Obras (${(p.portfolio || []).length}):</strong>
+          ${portHtml}
+        </div>
+      `;
+      container.appendChild(card);
+    });
+  } catch (err) {
+    console.error('Erro ao carregar prestadores:', err);
+  }
+}
+
+function abrirModalPortfolio() {
+  if (state.currentRole !== 'PRESTADOR') {
+    alert('Alterne para o papel PRESTADOR no topo para adicionar itens ao seu portfólio.');
+    return;
+  }
+  const body = document.getElementById('modal-body');
+  body.innerHTML = `
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+      <h3>Adicionar Obra ao Portfólio</h3>
+      <button class="btn btn-secondary btn-sm" onclick="fecharModal()">✕</button>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Título do Serviço Realizado:</label>
+      <input type="text" id="port-titulo" class="form-input" placeholder="Ex: Instalação de Ar Split Inverter 12000 BTUs">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Categoria:</label>
+      <select id="port-cat" class="form-select">
+        <option value="Elétrica">Elétrica</option>
+        <option value="Hidráulica">Hidráulica</option>
+        <option value="Pintura">Pintura</option>
+        <option value="Alvenaria">Alvenaria</option>
+        <option value="Climatização">Climatização</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Descrição Técnica:</label>
+      <textarea id="port-desc" class="form-textarea" rows="3" placeholder="Detalhes da execução e materiais utilizados..."></textarea>
+    </div>
+    <div style="display:flex; justify-content:flex-end; gap:8px;">
+      <button class="btn btn-secondary" onclick="fecharModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="salvarPortfolio()">Salvar no Catálogo</button>
+    </div>
+  `;
+  document.getElementById('modal').style.display = 'flex';
+}
+
+async function salvarPortfolio() {
+  const titulo = document.getElementById('port-titulo').value.trim();
+  const categoria = document.getElementById('port-cat').value;
+  const descricao = document.getElementById('port-desc').value.trim();
+  if (!titulo) return alert('Informe o título.');
+
+  const res = await fetch(`/api/prestadores/${state.currentUser.id}/portfolio`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ titulo, categoria, descricao })
+  });
+  const json = await res.json();
+  if (json.sucesso) {
+    fecharModal();
+    carregarPrestadores();
+  } else {
+    alert(json.mensagem);
+  }
+}
+
+async function carregarPainelAdmin() {
+  try {
+    const [resMet, resUsers, resCup] = await Promise.all([
+      fetch('/api/admin/metricas'),
+      fetch('/api/usuarios'),
+      fetch('/api/cupons')
+    ]);
+    const met = await resMet.json();
+    const users = await resUsers.json();
+    const cup = await resCup.json();
+
+    const grid = document.getElementById('admin-metrics-grid');
+    if (grid && met.sucesso) {
+      const m = met.dados;
+      grid.innerHTML = `
+        <div class="kpi-card"><div class="kpi-label">Taxa de Conversão</div><div class="kpi-value">${m.taxa_conversao_percentual}%</div><div class="kpi-sub">${m.ordens_concluidas} de ${m.total_ordens} ordens</div></div>
+        <div class="kpi-card"><div class="kpi-label">Ticket Médio</div><div class="kpi-value">R$ ${Number(m.ticket_medio).toFixed(2)}</div><div class="kpi-sub">Valor médio contratado</div></div>
+        <div class="kpi-card"><div class="kpi-label">Receita de Taxas</div><div class="kpi-value">R$ ${Number(m.receita_taxas).toFixed(2)}</div><div class="kpi-sub">Intermediação acumulada</div></div>
+        <div class="kpi-card"><div class="kpi-label">Prestadores Verificados</div><div class="kpi-value">${m.prestadores_verificados}/${m.total_prestadores}</div><div class="kpi-sub">Homologados no sistema</div></div>
+      `;
+    }
+
+    const verDiv = document.getElementById('admin-verificacoes-list');
+    if (verDiv && users.sucesso) {
+      const pendentes = users.dados.filter(u => u.papel !== 'ADMIN');
+      verDiv.innerHTML = pendentes.map(u => `
+        <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid #E2E8F0;">
+          <div>
+            <strong style="font-size:13px;">${escapeHtml(u.nome)}</strong> <span style="font-size:11px; color:#64748B;">(${escapeHtml(u.papel)})</span>
+            <div style="font-size:11px; color:#64748B;">${u.verificado === 1 ? '✓ Selo Verificado Ativo' : '⏳ Aguardando homologação'}</div>
+          </div>
+          ${u.verificado === 0 ? `<button class="btn btn-success btn-sm" onclick="aprovarVerificacaoAdmin(${u.id})">Aprovar Selo</button>` : ''}
+        </div>
+      `).join('');
+    }
+
+    const cupDiv = document.getElementById('admin-cupons-list');
+    if (cupDiv && cup.sucesso) {
+      cupDiv.innerHTML = cup.dados.map(c => `
+        <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid #E2E8F0;">
+          <div>
+            <strong style="font-family:monospace;">${escapeHtml(c.codigo)}</strong> — ${c.desconto_percentual}% de desconto na taxa
+          </div>
+          <button class="btn ${c.ativo === 1 ? 'btn-success' : 'btn-secondary'} btn-sm" onclick="alternarCupomAdmin(${c.id})">
+            ${c.ativo === 1 ? 'Ativo' : 'Inativo'}
+          </button>
+        </div>
+      `).join('');
+    }
+  } catch (err) {
+    console.error('Erro ao carregar painel admin:', err);
+  }
+}
+
+async function aprovarVerificacaoAdmin(userId) {
+  const admin = state.usuarios.find(u => u.papel === 'ADMIN');
+  if (!admin) return alert('Nenhum usuário ADMIN encontrado.');
+  const res = await fetch(`/api/admin/usuarios/${userId}/aprovar`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ admin_id: admin.id })
+  });
+  const json = await res.json();
+  alert(json.mensagem);
+  carregarUsuarios();
+  carregarPainelAdmin();
+}
+
+async function criarCupomAdmin(e) {
+  e.preventDefault();
+  const admin = state.usuarios.find(u => u.papel === 'ADMIN');
+  if (!admin) return alert('Nenhum usuário ADMIN encontrado.');
+  const codigo = document.getElementById('cupom-codigo').value.trim();
+  const desconto_percentual = document.getElementById('cupom-desconto').value;
+  const res = await fetch('/api/admin/cupons', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ admin_id: admin.id, codigo, desconto_percentual })
+  });
+  const json = await res.json();
+  alert(json.mensagem);
+  if (json.sucesso) {
+    document.getElementById('cupom-codigo').value = '';
+    document.getElementById('cupom-desconto').value = '';
+    carregarPainelAdmin();
+  }
+}
+
+async function alternarCupomAdmin(cupomId) {
+  const admin = state.usuarios.find(u => u.papel === 'ADMIN');
+  if (!admin) return;
+  await fetch(`/api/admin/cupons/${cupomId}/toggle`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ admin_id: admin.id })
+  });
+  carregarPainelAdmin();
+}
+
+function abrirModalAvaliarCliente(orderId) {
+  const nota = prompt('Avalie o cliente de 1 a 5 estrelas:', '5');
+  if (!nota) return;
+  const comentario = prompt('Comentário sobre o atendimento com o cliente:', 'Cliente pontual e cordial.');
+  fetch(`/api/ordens/${orderId}/avaliar-cliente`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ prestador_id: state.currentUser.id, nota: parseInt(nota, 10) || 5, comentario })
+  })
+  .then(r => r.json())
+  .then(j => {
+    alert(j.mensagem);
+    carregarUsuarios();
+  });
+}
+
+function abrirModalAuth() {
+  const body = document.getElementById('modal-body');
+  body.innerHTML = `
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+      <h3>Cadastrar Nova Conta FreeLA</h3>
+      <button class="btn btn-secondary btn-sm" onclick="fecharModal()">✕</button>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Nome Completo:</label>
+      <input type="text" id="auth-nome" class="form-input" placeholder="Ex: João Ferreira">
+    </div>
+    <div class="form-group">
+      <label class="form-label">E-mail:</label>
+      <input type="email" id="auth-email" class="form-input" placeholder="joao@email.com">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Senha (mín. 6 caracteres):</label>
+        <input type="password" id="auth-senha" class="form-input" placeholder="******">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Perfil:</label>
+        <select id="auth-papel" class="form-select">
+          <option value="CLIENTE">Cliente</option>
+          <option value="PRESTADOR">Prestador</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Especialidade (se Prestador):</label>
+      <input type="text" id="auth-esp" class="form-input" placeholder="Ex: Pintura Residencial">
+    </div>
+    <div style="display:flex; justify-content:flex-end; gap:8px;">
+      <button class="btn btn-secondary" onclick="fecharModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="registrarNovaConta()">Criar Conta</button>
+    </div>
+  `;
+  document.getElementById('modal').style.display = 'flex';
+}
+
+async function registrarNovaConta() {
+  const nome = document.getElementById('auth-nome').value.trim();
+  const email = document.getElementById('auth-email').value.trim();
+  const senha = document.getElementById('auth-senha').value;
+  const papel = document.getElementById('auth-papel').value;
+  const especialidade = document.getElementById('auth-esp').value.trim();
+
+  const res = await fetch('/api/auth/register', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ nome, email, senha, papel, especialidade })
+  });
+  const json = await res.json();
+  alert(json.mensagem);
+  if (json.sucesso) {
+    state.currentUser = json.dados;
+    state.currentRole = json.dados.papel;
+    await carregarUsuarios();
+    atualizarBadgeUsuario();
+    fecharModal();
+  }
 }

@@ -45,8 +45,13 @@ class EscrowService {
     if (taxaPlataforma < 15.0) taxaPlataforma = 15.0;
 
     const cupomSan = (cupom || '').trim().toUpperCase();
-    if (cupomSan === 'FREELA10') {
-      taxaPlataforma = Math.round(taxaPlataforma * 0.5 * 100) / 100; // 50% de desconto na taxa
+    if (cupomSan) {
+      const cupomDb = db.prepare('SELECT desconto_percentual FROM cupons WHERE codigo = ? AND ativo = 1').get(cupomSan);
+      if (cupomDb) {
+        taxaPlataforma = Math.round(taxaPlataforma * (1 - cupomDb.desconto_percentual / 100) * 100) / 100;
+      } else if (cupomSan === 'FREELA10') {
+        taxaPlataforma = Math.round(taxaPlataforma * 0.5 * 100) / 100;
+      }
     }
 
     const valorTotal = Math.round((valorMaoObra + taxaPlataforma) * 100) / 100;
@@ -280,6 +285,60 @@ class EscrowService {
       decisao: decisaoSan,
       status_final: (decisaoSan === 'REPASSE_PRESTADOR' ? 'CONCLUIDO' : 'CANCELADO')
     };
+  }
+
+  /**
+   * Avaliação mútua bilateral: Prestador avalia o Cliente após conclusão
+   */
+  avaliarCliente({ ordemId, prestadorId, nota, comentario }) {
+    const ordem = db.prepare('SELECT * FROM ordens_servico WHERE id = ?').get(ordemId);
+    if (!ordem) {
+      const err = new Error('Ordem de serviço não encontrada.');
+      err.status = 404;
+      throw err;
+    }
+
+    if (ordem.status !== 'CONCLUIDO') {
+      const err = new Error('A avaliação mútua só pode ser registrada após a conclusão da ordem.');
+      err.status = 400;
+      throw err;
+    }
+
+    const pId = parseInt(prestadorId, 10);
+    if (!pId || pId !== ordem.prestador_id) {
+      const err = new Error('Acesso negado: Apenas o prestador vinculado a esta ordem pode avaliar o cliente.');
+      err.status = 403;
+      throw err;
+    }
+
+    const jaAvaliou = db.prepare('SELECT id FROM avaliacoes WHERE ordem_id = ? AND avaliador_id = ?').get(ordemId, pId);
+    if (jaAvaliou) {
+      const err = new Error('Você já registrou uma avaliação para este cliente nesta ordem.');
+      err.status = 400;
+      throw err;
+    }
+
+    const notaNum = Math.max(1, Math.min(5, parseInt(nota, 10) || 5));
+    const comentarioSan = (comentario || 'Cliente pontual e claro nas instruções.').trim();
+
+    db.exec('BEGIN TRANSACTION;');
+    try {
+      db.prepare(`
+        INSERT INTO avaliacoes (ordem_id, avaliador_id, avaliado_id, nota, comentario)
+        VALUES (?, ?, ?, ?, ?)
+      `).run(ordemId, pId, ordem.cliente_id, notaNum, comentarioSan);
+
+      const avg = db.prepare('SELECT AVG(nota) as media FROM avaliacoes WHERE avaliado_id = ?').get(ordem.cliente_id);
+      if (avg && avg.media) {
+        db.prepare('UPDATE usuarios SET reputacao = ROUND(?, 1) WHERE id = ?').run(avg.media, ordem.cliente_id);
+      }
+      db.exec('COMMIT;');
+    } catch (txErr) {
+      db.exec('ROLLBACK;');
+      throw txErr;
+    }
+
+    return { ordem_id: ordemId, avaliado_id: ordem.cliente_id, nota: notaNum };
   }
 }
 

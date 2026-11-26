@@ -132,11 +132,19 @@ Visualização de saldos operacionais (disponível vs. em garantia) e formulári
 Registro auditável de disparos de notificações automáticas via WhatsApp e E-mail transacional para clientes e prestadores:
 ![Central de Notificações](docs/img/print_notificacoes.png)
 
+### Catálogo de Prestadores e Portfólio Técnico
+Listagem de profissionais com selo de verificação documental, reputação e histórico de obras:
+![Catálogo de Prestadores](docs/img/print_prestadores.png)
+
+### Painel Administrativo (Métricas, Verificações e Cupons Dinâmicos)
+Área exclusiva do perfil administrador com taxa de conversão, homologação de selo verificado e gestão de cupons:
+![Painel Administrativo](docs/img/print_admin.png)
+
 ---
 
 ## 7 Suíte de Testes Automatizados
 
-O sistema inclui 16 testes automatizados de integração que cobrem os requisitos de negócio, segurança OWASP, controle de concorrência e integridade referencial:
+O sistema inclui **22 testes automatizados de integração** que cobrem os requisitos de negócio, autenticação, RBAC administrativo, cupons dinâmicos, portfólio, avaliação mútua bilateral, segurança OWASP, controle de concorrência e integridade referencial:
 
 Execute os testes com o comando:
 
