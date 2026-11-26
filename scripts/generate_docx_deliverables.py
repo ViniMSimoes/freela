@@ -336,7 +336,7 @@ def gerar_docx_backlog():
     )
 
     add_heading_1(doc, "1 INTRODUÇÃO E EVOLUÇÃO DO PRODUTO (CHANGELOG)")
-    add_paragraph(doc, "A entrega inicial de 16 de outubro de 2026 continha 13 itens conceituais. Durante o ciclo da Sprint 1 e a auditoria técnica, a equipe entregou 14 itens 100% funcionais no MVP, implementando também 3 novos habilitadores de segurança.")
+    add_paragraph(doc, "A entrega inicial de 16 de outubro de 2026 continha 13 itens conceituais. Durante o ciclo da Sprint 1 e a auditoria técnica, a equipe entregou 15 itens 100% funcionais no MVP (com o desmembramento do Item 10 em 10A e 10B), implementando também 3 novos habilitadores de segurança.")
     add_paragraph(doc, "Itens Concluídos no MVP: Itens 1, 2, 3, 4, 5, 6, 7, 8, 9, 10A (Saque via PIX), 14 (Hardening Helmet), 15 (Transações Atômicas Anti Double-Spending), 16 (Rate Limiting), 17 (Arbitragem de Disputas) e 18 (Mensageria WhatsApp e E-mail).")
 
     add_heading_1(doc, "2 PAINEL CONSOLIDADO DE MÉTRICAS DO BACKLOG")
@@ -353,12 +353,12 @@ def gerar_docx_backlog():
     headers = ["Indicador de Engenharia", "Versão 1.0 (16/10)", "Versão 2.0 (27/11)", "Situação Atual no MVP"]
     col_w = [2.0, 1.4, 1.4, 1.5]
     data = [
-        ["Total de Itens Catalogados", "13 itens", "18 itens", "Escopo ampliado em 5 itens"],
-        ["Itens Concluídos e Testados", "0 itens", "14 itens", "77,8% do escopo total entregue"],
+        ["Total de Itens Catalogados", "13 itens", "19 itens", "Escopo ampliado em 6 itens"],
+        ["Itens Concluídos e Testados", "0 itens", "15 itens", "78,9% do escopo total entregue"],
         ["Itens Classificados como Must", "7 itens", "9 itens", "100% dos itens Must concluídos (9 de 9)"],
-        ["Itens Classificados como Should", "4 itens", "6 itens", "66,7% concluídos (4 de 6)"],
-        ["Itens Classificados como Could", "2 itens", "3 itens", "33,3% concluídos (1 de 3)"],
-        ["Habilitadores de Arquitetura", "1 item", "3 itens", "100% concluídos (Escrow, Hardening, ACID)"],
+        ["Itens Classificados como Should", "4 itens", "7 itens", "85,7% concluídos (6 de 7)"],
+        ["Itens Classificados como Could", "2 itens", "3 itens", "0% concluídos (previstos para Sprint 2)"],
+        ["Habilitadores de Arquitetura", "1 item", "4 itens", "100% concluídos (Escrow, Helmet, ACID, Mensageria)"],
         ["Requisitos Não Funcionais (RNF)", "1 item", "2 itens", "100% atendidos (Latência < 50ms, Rate Limit)"]
     ]
     formatar_tabela(tabela, col_w, headers, data)
@@ -389,7 +389,7 @@ def gerar_docx_backlog():
     p_tcap2 = doc.add_paragraph()
     p_tcap2.paragraph_format.space_before = Pt(8)
     p_tcap2.paragraph_format.space_after = Pt(2)
-    r_tcap2 = p_tcap2.add_run("Tabela 2: Especificação completa dos 18 itens do Product Backlog.")
+    r_tcap2 = p_tcap2.add_run("Tabela 2: Especificação completa dos 19 itens do Product Backlog.")
     r_tcap2.font.name = 'Arial'
     r_tcap2.font.size = Pt(10)
     r_tcap2.font.bold = True
@@ -428,7 +428,7 @@ def gerar_docx_backlog():
     r_tsrc2.font.italic = True
 
     add_heading_1(doc, "7 MATRIZ DE RASTREABILIDADE COM OS TESTES AUTOMATIZADOS")
-    add_paragraph(doc, "Todos os 14 itens concluídos no MVP possuem validação atestada pela suíte de 16 testes de integração (tests/api.test.js), garantindo conformidade funcional e ausência de regressões.")
+    add_paragraph(doc, "Todos os 15 itens concluídos no MVP possuem validação atestada pela suíte de 16 testes de integração (tests/api.test.js), garantindo conformidade funcional e ausência de regressões.")
 
     add_heading_1(doc, "REFERÊNCIAS")
     add_paragraph(doc, "ASSOCIAÇÃO BRASILEIRA DE NORMAS TÉCNICAS. NBR 6024: Informação e documentação: numeração progressiva das seções de um documento escrito: apresentação. Rio de Janeiro: ABNT, 2012.")
@@ -470,7 +470,7 @@ def gerar_docx_banco_dados():
         ("3.1 Tabela usuarios", [
             ["id", "INTEGER", "Não", "PK", "Identificador único autoincremental"],
             ["nome", "TEXT", "Não", "—", "Nome completo do usuário"],
-            ["email", "TEXT", "Não", "UNIQUE", "E-mail único para autenticação"],
+            ["email", "TEXT", "Não", "UNIQUE", "E-mail único para identificação e notificações (MVP sem senha)"],
             ["papel", "TEXT", "Não", "—", "CHECK(papel IN ('CLIENTE', 'PRESTADOR', 'ADMIN'))"],
             ["telefone", "TEXT", "Sim", "—", "Telefone com DDD para WhatsApp"],
             ["especialidade", "TEXT", "Sim", "—", "Área de atuação profissional"],
@@ -544,7 +544,7 @@ def gerar_docx_banco_dados():
     add_paragraph(doc, "3. Relação ordens_servico para avaliacoes (1:N Bilateral): Modela a avaliação mútua onde cliente e prestador avaliam-se mutuamente na mesma ordem.")
 
     add_heading_1(doc, "5 DIRETRIZES TÉCNICAS E EVOLUÇÃO ARQUITETURAL")
-    add_paragraph(doc, "Valores Monetários em Centavos Inteiros: A plataforma persiste quantias monetárias como inteiros de centavos para eliminar imprecisões de ponto flutuante binário (IEEE 754), garantindo integridade estrita nas deduções e transferências.")
+    add_paragraph(doc, "Valores Monetários e Precisão Financeira: O MVP atual utiliza colunas REAL no schema.sql para simplificar a prototipação inicial no SQLite. Na evolução para produção, as colunas financeiras serão convertidas para inteiros em centavos (BIGINT) ou decimais exatos (NUMERIC), eliminando imprecisões de ponto flutuante binário (IEEE 754).")
     add_paragraph(doc, "Planejamento de Migração para PostgreSQL 16: O roteiro de produção inclui a substituição por BIGINT IDENTITY, suporte nativo a BOOLEAN, carimbos TIMESTAMPTZ em UTC, gerenciamento de pool de conexões com pg.Pool e isolamento SERIALIZABLE nas rotinas de liquidação.")
 
     add_heading_1(doc, "REFERÊNCIAS")
@@ -670,7 +670,7 @@ def gerar_docx_consolidado():
     add_paragraph(doc, "O manual documenta todos os 14 endpoints da API RESTful, estabelece validação estrita de titularidade com HTTP 403 e detalha a Seção 4 obrigatória de próximas entregas (Docker, JWT RS256, BaaS e Painel Admin).")
 
     add_heading_1(doc, "PARTE III: PRODUCT BACKLOG ATUALIZADO (CRITÉRIO C3)")
-    add_paragraph(doc, "O backlog evoluiu para 18 itens, alcançando 77,8% de conclusão no MVP (14 itens concluídos) e 100% dos 9 itens Must finalizados. Destacam-se o Item 10A (Saque via PIX entregue), o Item 17 (Arbitragem de Disputas entregue) e o Item 18 (Mensageria entregue). A performance do Item 7 foi comprovada por benchmark experimental com média real de 28,2 ms.")
+    add_paragraph(doc, "O backlog evoluiu para 19 itens, alcançando 78,9% de conclusão no MVP (15 itens concluídos) e 100% dos 9 itens Must finalizados. Destacam-se o Item 10A (Saque via PIX entregue), o Item 17 (Arbitragem de Disputas entregue) e o Item 18 (Mensageria entregue). A performance do Item 7 foi comprovada por benchmark experimental com média real de 28,2 ms.")
 
     add_heading_1(doc, "PARTE IV: ESTRUTURA DO BANCO DE DADOS (CRITÉRIO C4)")
     add_paragraph(doc, "O modelo relacional em 3FN implementa integridade referencial ativa no arquivo freela.db. Os valores monetários são representados como números inteiros de centavos para eliminar erros de arredondamento IEEE 754. A modelagem contempla a avaliação mútua bilateral 1:N entre cliente e prestador.")

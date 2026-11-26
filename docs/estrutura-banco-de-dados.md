@@ -149,7 +149,7 @@ Tabela 1: Dicionário de dados da tabela `usuarios`.
 |---|---|:---:|:---:|---|
 | `id` | `INTEGER` | Não | PK | Identificador sequencial primário autoincremental |
 | `nome` | `TEXT` | Não | — | Nome completo do usuário |
-| `email` | `TEXT` | Não | UNIQUE | Endereço eletrônico único para autenticação |
+| `email` | `TEXT` | Não | UNIQUE | Endereço eletrônico único para identificação e envio de notificações (MVP opera sem senha) |
 | `papel` | `TEXT` | Não | — | `CHECK(papel IN ('CLIENTE', 'PRESTADOR', 'ADMIN'))` |
 | `telefone` | `TEXT` | Sim | — | Telefone com DDD para notificações via WhatsApp |
 | `especialidade` | `TEXT` | Sim | — | Especialidade profissional do prestador |
@@ -309,7 +309,7 @@ As regras de integridade referencial mantêm a consistência relacional do banco
 
 A literatura de engenharia de software contraindica o uso de tipos de ponto flutuante binário (`REAL`, `FLOAT`, `DOUBLE`) para processamento financeiro. A especificação IEEE 754 introduz dízimas periódicas binárias que geram imprecisões de arredondamento em operações matemáticas cumulativas.
 
-O FreeLA adota a representação de valores monetários como números inteiros de centavos (por exemplo, a quantia de R$ 450,00 é armazenada como `45000`). Essa decisão técnica garante exatidão matemática nas operações de bloqueio, cálculo de taxas e transferências bancárias.
+O MVP atual utiliza colunas `REAL` no `schema.sql` para simplificar a prototipação inicial no SQLite. Na evolução para produção em PostgreSQL 16, o FreeLA converterá todas as colunas financeiras para números inteiros em centavos (`BIGINT`) ou decimais exatos (`NUMERIC(12,2)`), garantindo exatidão matemática absoluta nas operações de bloqueio, cálculo de taxas e transferências bancárias.
 
 ### 6.2 Planejamento Técnico de Migração para PostgreSQL 16
 

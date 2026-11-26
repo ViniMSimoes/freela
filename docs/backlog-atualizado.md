@@ -47,12 +47,12 @@ Tabela 1: Indicadores comparativos do Product Backlog.
 
 | Indicador de Engenharia | Versão 1.0 (16/10) | Versão 2.0 (27/11) | Situação Atual |
 |---|---|---|---|
-| Total de Itens Catalogados | 13 itens | 18 itens | Escopo ampliado em 5 itens |
-| Itens Concluídos e Testados no MVP | 0 itens | 14 itens | 77,8% do escopo total entregue |
+| Total de Itens Catalogados | 13 itens | 19 itens | Escopo ampliado em 6 itens (incluindo divisão de 10A/10B) |
+| Itens Concluídos e Testados no MVP | 0 itens | 15 itens | 78,9% do escopo total entregue |
 | Itens Classificados como Must | 7 itens | 9 itens | 100% dos itens Must concluídos (9 de 9) |
-| Itens Classificados como Should | 4 itens | 6 itens | 66,7% concluídos (4 de 6) |
-| Itens Classificados como Could | 2 itens | 3 itens | 33,3% concluídos (1 de 3) |
-| Habilitadores Técnicos de Arquitetura | 1 item | 3 itens | 100% concluídos (Escrow, Hardening, ACID) |
+| Itens Classificados como Should | 4 itens | 7 itens | 85,7% concluídos (6 de 7) |
+| Itens Classificados como Could | 2 itens | 3 itens | 0% concluídos (previstos para Sprint 2) |
+| Habilitadores Técnicos de Arquitetura | 1 item | 4 itens | 100% concluídos (Escrow, Helmet, ACID, Mensageria) |
 | Requisitos Não Funcionais (RNF) | 1 item | 2 itens | 100% atendidos (Latência < 50ms, Rate Limit) |
 
 Fonte: Autores (2026).
@@ -118,7 +118,7 @@ O projeto FreeLA atende à comunidade de Volta Redonda/RJ no âmbito das Prátic
 
 ## 6 TABELA DETALHADA DO PRODUCT BACKLOG PRIORIZADO
 
-A Tabela 2 apresenta os 18 itens do backlog classificados pelo método MoSCoW, com seus respectivos critérios de aceitação e status no projeto.
+A Tabela 2 apresenta os 19 itens do backlog classificados pelo método MoSCoW, com seus respectivos critérios de aceitação e status no projeto.
 
 Tabela 2: Product Backlog consolidado e priorizado.
 
